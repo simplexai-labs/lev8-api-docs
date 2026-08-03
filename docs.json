@@ -3,6 +3,11 @@
   "theme": "mint",
   "name": "lev8 API",
   "description": "Build live-web people and business intelligence into your product.",
+  "seo": {
+    "metatags": {
+      "canonical": "https://docs.lev8.com"
+    }
+  },
   "colors": {
     "primary": "#9A6D00",
     "light": "#FFBB17",
