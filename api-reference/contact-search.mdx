@@ -1,0 +1,141 @@
+---
+title: "Contact Search"
+description: "Find an email address or phone number for a contact using a natural-language objective."
+---
+
+`POST /v1/contact-search` searches for one email address or phone number and returns a JSON response.
+
+## Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `Content-Type: application/json` | Yes | Other media types return `422`. |
+| `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
+| `x-api-key` | Yes | An active lev8 External API key with Contact Search access. |
+| `Idempotency-Key` | Recommended | A unique value up to 128 characters for one logical request. |
+
+## Request body
+
+| Field | Type | Required | Constraints |
+| --- | --- | --- | --- |
+| `contact_type` | string | Yes | `email` or `phone`. |
+| `objective` | string | Yes | Natural-language description of the person or contact to find, 1 to 4,000 Unicode characters after trimming. |
+
+The complete request body must be at most 1 MiB. Unknown fields, malformed JSON, and multiple JSON objects are rejected.
+
+## Example request
+
+<CodeGroup>
+
+```bash cURL
+curl "$LEV8_API_BASE_URL/v1/contact-search" \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "Accept: application/json" \
+  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  --data '{
+    "contact_type": "email",
+    "objective": "Find the work email for the VP of Sales at Acme"
+  }'
+```
+
+```javascript Node.js
+const response = await fetch(`${process.env.LEV8_API_BASE_URL}/v1/contact-search`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "x-api-key": process.env.LEV8_API_KEY,
+    "Idempotency-Key": crypto.randomUUID(),
+  },
+  body: JSON.stringify({
+    contact_type: "email",
+    objective: "Find the work email for the VP of Sales at Acme",
+  }),
+});
+
+if (!response.ok) {
+  throw new Error(`lev8 request failed with HTTP ${response.status}`);
+}
+
+const result = await response.json();
+console.log(result.result.content);
+```
+
+```python Python
+import os
+import uuid
+import requests
+
+response = requests.post(
+    f"{os.environ['LEV8_API_BASE_URL']}/v1/contact-search",
+    headers={
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+        "x-api-key": os.environ["LEV8_API_KEY"],
+        "Idempotency-Key": str(uuid.uuid4()),
+    },
+    json={
+        "contact_type": "email",
+        "objective": "Find the work email for the VP of Sales at Acme",
+    },
+    timeout=45,
+)
+response.raise_for_status()
+
+print(response.json()["result"]["content"])
+```
+
+</CodeGroup>
+
+## Response
+
+On success, the response status is `200`. `X-Request-Id` contains the lev8 request ID, and `Cache-Control` is `no-store`.
+
+```json
+{
+  "object": "contact_search_result",
+  "request": {
+    "contact_type": "email",
+    "objective": "Find the work email for the VP of Sales at Acme"
+  },
+  "result": {
+    "content": "alex@example.com",
+    "reference": "https://example.com/team"
+  },
+  "created_at": "2026-08-03T12:00:00Z"
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `object` | string | Always `contact_search_result`. |
+| `request.contact_type` | string | Echoes the normalized `contact_type` from the request. |
+| `request.objective` | string | Echoes the normalized `objective` from the request. |
+| `result.content` | string or null | The email address or phone number when found; otherwise `null` or an empty string. |
+| `result.reference` | string or null | A supporting reference when available; otherwise `null`. |
+| `created_at` | string | UTC RFC 3339 timestamp for the result. |
+
+Clients should treat `result.content` as not found when it is `null`, empty, or contains only whitespace. The response contains only the documented fields; upstream error bodies and internal request identifiers are not exposed.
+
+## Billing behavior
+
+lev8 reserves the configured price for one lookup before contacting the search service. The rollout configuration determines whether a valid completed lookup is charged per request or only when `result.content` contains a result. Your lev8 contact will provide the enabled contact types and applicable pricing.
+
+The success response is written only after settlement succeeds. An upstream or response-protocol failure returns `500 internal_error` and releases the reservation when the billing service is available.
+
+## Errors
+
+| Status | Error type | Meaning |
+| --- | --- | --- |
+| `401` | `authentication_error` | The API key is missing, malformed, or unknown. |
+| `402` | `insufficient_credits` | The account cannot reserve the lookup cost. |
+| `403` | `authentication_error` | The API key is revoked, expired, or lacks Contact Search access. |
+| `409` | `idempotency_error` or `request_already_exists` | The idempotency key conflicts with or duplicates an admitted request. |
+| `422` | `invalid_request_error` | The content type, JSON structure, field value, or request size is invalid. |
+| `429` | `concurrency_limit` | The user-level or service-level concurrent request limit was reached. |
+| `500` | `internal_error` | An internal dependency, upstream request, protocol check, or settlement failed. |
+| `503` | `service_unavailable` | Contact Search or the requested contact type is not enabled or priced. |
+
+Errors use the standard [error envelope](/api-reference/errors).
