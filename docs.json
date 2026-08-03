@@ -4,9 +4,9 @@
   "name": "lev8 API",
   "description": "Build live-web people and business intelligence into your product.",
   "colors": {
-    "primary": "#D99A00",
+    "primary": "#9A6D00",
     "light": "#FFBB17",
-    "dark": "#FFCB45"
+    "dark": "#9A6D00"
   },
   "favicon": "/favicon.svg",
   "logo": {
