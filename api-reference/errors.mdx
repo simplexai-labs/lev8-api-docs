@@ -1,6 +1,6 @@
 ---
 title: "Errors"
-description: "Handle lev8 HTTP errors and failures that occur after an SSE stream begins."
+description: "Handle lev8 HTTP errors, JSON request failures, and failures after an SSE stream begins."
 ---
 
 Errors returned before streaming starts use a JSON envelope:
@@ -27,15 +27,17 @@ Errors returned before streaming starts use a JSON envelope:
 | `402` | `insufficient_credits` | The account cannot reserve the maximum request cost. |
 | `403` | `authentication_error` | API key is revoked, expired, or lacks endpoint access. |
 | `409` | `idempotency_error` | The same idempotency key was reused with a different request body. |
-| `409` | `request_already_exists` | The same idempotent request already exists; SSE replay is not available. |
+| `409` | `request_already_exists` | The same idempotent request already exists; response replay is not available. |
 | `422` | `invalid_request_error` | Content type, JSON structure, field value, or request size is invalid. |
 | `429` | `concurrency_limit` | The user-level or service-level concurrent request limit was reached. |
-| `500` | `internal_error` | An internal dependency or upstream operation failed before results streamed. |
-| `503` | `service_unavailable` | The endpoint or requested entity type is not enabled in this environment. |
+| `500` | `internal_error` | An internal dependency, upstream operation, protocol check, or settlement failed. |
+| `503` | `service_unavailable` | The endpoint or requested entity or contact type is not enabled or priced in this environment. |
 
 The API intentionally redacts upstream response bodies, internal request IDs, and implementation details.
 
-Not every status applies to every endpoint. In particular, Credit balance can return `401`, `403`, `500`, or `503`; it does not reserve credits and therefore does not return Entity Search billing or idempotency errors.
+Not every status applies to every endpoint. In particular, Credit balance can return `401`, `403`, `500`, or `503`; it does not reserve credits and therefore does not return search billing or idempotency errors.
+
+Contact Search returns errors before writing a success body. Upstream and response-protocol details are redacted, and a successful JSON result is not returned until billing settlement succeeds.
 
 ## Errors inside an SSE stream
 

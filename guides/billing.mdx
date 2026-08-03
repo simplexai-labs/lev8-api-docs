@@ -3,7 +3,7 @@ title: "Credits and billing"
 description: "Understand reservation, settlement, release, and reconciliation behavior."
 ---
 
-Entity Search uses lev8 credits. Prices and enabled entity types are configured for each rollout; this documentation intentionally does not publish draft or test rates as production prices.
+Entity Search and Contact Search use lev8 credits. Prices, enabled entity types, enabled contact types, and Contact Search billing mode are configured for each rollout; this documentation intentionally does not publish draft or test rates as production prices.
 
 ## Check available credits
 
@@ -34,7 +34,9 @@ The balance response is deliberately account-level: it does not expose paid, mon
 - Promotional and standard credit buckets are restored to their original source when unused reserved credits are returned.
 - `[DONE]` confirms the SSE protocol ended, but settlement happens immediately after streaming and cannot be reported back on the completed stream.
 - Multiple API keys owned by the same user share the same billing subject and user-level concurrency allowance.
-- Contact Search pricing, enrichment surcharges, and final production Entity Search rates are not part of the current public contract.
+- Contact Search reserves one lookup at its configured email or phone price. Depending on the rollout, a completed request is charged either per request or only when `result.content` contains a result.
+- Contact Search validates the upstream JSON and settles before returning a successful response. Upstream or protocol failures release the reservation; settlement uncertainty returns an error and requires reconciliation.
+- Contact Search pricing, enrichment surcharges, and final production Entity Search rates are provided separately for each rollout rather than published here.
 
 <Note>
   If a stream returns partial results and then emits an `error`, retain `X-Request-Id` and `leads_search_id`. Do not automatically repeat the request with a new idempotency key.
