@@ -1,0 +1,89 @@
+---
+title: "Credit balance"
+description: "Query the credits currently available to the billing account attached to an API key."
+---
+
+`GET /v1/credit/balance` returns the credits that the API key's billing account can use for a new request.
+
+## Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `x-api-key` | Yes | Any active lev8 External API key. Entity Search scope is not required. |
+
+The endpoint does not accept a user ID or another billing-account identifier. The service always resolves the account from the supplied API key.
+
+## Example request
+
+<CodeGroup>
+
+```bash cURL
+curl "$LEV8_API_BASE_URL/v1/credit/balance" \
+  --header "x-api-key: $LEV8_API_KEY"
+```
+
+```javascript Node.js
+const response = await fetch(`${process.env.LEV8_API_BASE_URL}/v1/credit/balance`, {
+  headers: {
+    "x-api-key": process.env.LEV8_API_KEY,
+  },
+});
+
+if (!response.ok) {
+  throw new Error(`lev8 request failed with HTTP ${response.status}`);
+}
+
+const balance = await response.json();
+console.log(balance.available_credits);
+```
+
+```python Python
+import os
+import requests
+
+response = requests.get(
+    f"{os.environ['LEV8_API_BASE_URL']}/v1/credit/balance",
+    headers={"x-api-key": os.environ["LEV8_API_KEY"]},
+    timeout=30,
+)
+response.raise_for_status()
+
+print(response.json()["available_credits"])
+```
+
+</CodeGroup>
+
+## Response
+
+```json
+{
+  "object": "credit_balance",
+  "available_credits": 125,
+  "updated_at": "2026-08-03 17:30:00",
+  "next_credit_refresh_at": "2026-09-03 17:30:00"
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `object` | string | Always `credit_balance`. |
+| `available_credits` | integer | Total credits currently available for new requests. Credits reserved by in-progress requests are excluded. |
+| `updated_at` | string | When the returned balance was last updated. Omitted when unavailable. |
+| `next_credit_refresh_at` | string | When the next scheduled credit refresh occurs. Omitted when unavailable. |
+
+The response includes `Cache-Control: no-store`. Clients should fetch it when they need a current value instead of caching it as an account entitlement.
+
+<Note>
+  `available_credits` combines all currently usable credit sources. The response intentionally does not expose paid, monthly, subscription, or promotional bucket details.
+</Note>
+
+## Errors
+
+| Status | Error type | Meaning |
+| --- | --- | --- |
+| `401` | `authentication_error` | The API key is missing, malformed, or unknown. |
+| `403` | `authentication_error` | The API key is revoked or expired. |
+| `500` | `internal_error` | The credential or credit service could not complete the request. |
+| `503` | `service_unavailable` | The External API is not enabled in this environment. |
+
+Errors use the standard [error envelope](/api-reference/errors). Internal dependency details are never returned to the client.

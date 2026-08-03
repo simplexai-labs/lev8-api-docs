@@ -35,6 +35,8 @@ Errors returned before streaming starts use a JSON envelope:
 
 The API intentionally redacts upstream response bodies, internal request IDs, and implementation details.
 
+Not every status applies to every endpoint. In particular, Credit balance can return `401`, `403`, `500`, or `503`; it does not reserve credits and therefore does not return Entity Search billing or idempotency errors.
+
 ## Errors inside an SSE stream
 
 Once the stream starts, later errors are delivered as an SSE `error` object while the HTTP status remains `200`. See [Streaming events](/api-reference/streaming-events#errors-after-streaming-starts).

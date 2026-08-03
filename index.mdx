@@ -37,6 +37,9 @@ curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
   <Card title="Entity Search" icon="magnifying-glass" href="/api-reference/entity-search">
     Review request fields, entity types, and response behavior.
   </Card>
+  <Card title="Credit balance" icon="wallet" href="/api-reference/credit-balance">
+    Check the credits currently available to your API key's billing account.
+  </Card>
   <Card title="Errors" icon="triangle-exclamation" href="/api-reference/errors">
     Handle HTTP errors and failures after an SSE stream starts.
   </Card>
@@ -47,9 +50,10 @@ curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
 - Authentication uses an `x-api-key` header. API keys are separate from user sessions and internal service credentials.
 - Every accepted search gets a lev8 request ID. Preserve it when contacting support.
 - Results stream as `entity_search_batch` events, followed by `entity_search_done` and `[DONE]`.
+- `GET /v1/credit/balance` reports the credits currently available for new requests.
 - Requests can reserve credits up to the requested limit and settle against the number of unique returned entities.
 - Idempotency prevents duplicate execution and duplicate billing; the current API does not replay a previous SSE response.
 
 <Warning>
-  Contact Search, email and phone lookup, usage-query endpoints, SSE replay, and client-controlled API scopes are not part of the current public API.
+  Contact Search, email and phone lookup, credit history and bucket-detail endpoints, SSE replay, and client-controlled API scopes are not part of the current public API.
 </Warning>

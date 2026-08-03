@@ -5,6 +5,12 @@ description: "Understand reservation, settlement, release, and reconciliation be
 
 Entity Search uses lev8 credits. Prices and enabled entity types are configured for each rollout; this documentation intentionally does not publish draft or test rates as production prices.
 
+## Check available credits
+
+Call [`GET /v1/credit/balance`](/api-reference/credit-balance) with an active API key to read the credits currently available for a new request. The value combines all usable credit sources and excludes credits already reserved by in-progress requests.
+
+The balance response is deliberately account-level: it does not expose paid, monthly, subscription, or promotional bucket details, and it cannot be used to query another user. Responses include `Cache-Control: no-store`.
+
 ## Request lifecycle
 
 <Steps>

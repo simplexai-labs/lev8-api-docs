@@ -22,6 +22,17 @@ You need:
     ```
   </Step>
 
+  <Step title="Check available credits">
+    Confirm that the API key's billing account has credits available for a new request.
+
+    ```bash
+    curl "$LEV8_API_BASE_URL/v1/credit/balance" \
+      --header "x-api-key: $LEV8_API_KEY"
+    ```
+
+    The returned `available_credits` already excludes credits reserved by requests that are still in progress.
+  </Step>
+
   <Step title="Send a streaming search request">
     Use `--no-buffer` so curl prints each SSE event as it arrives. Supply a unique `Idempotency-Key` for the logical request.
 
@@ -61,6 +72,9 @@ You need:
 ## Next steps
 
 <CardGroup cols={2}>
+  <Card title="Check your balance" icon="wallet" href="/api-reference/credit-balance">
+    Read the current available-credit response and caching behavior.
+  </Card>
   <Card title="Request fields" icon="sliders" href="/api-reference/entity-search">
     Choose an entity type, limit, enrichments, and deduplication inputs.
   </Card>

@@ -23,6 +23,7 @@ Create a key from **API Tokens** in your lev8 workspace. The complete value is s
 - Revocation takes effect immediately. Repeated revocation is safe.
 - Existing keys cannot be recovered from the dashboard; create a replacement and rotate clients instead.
 - API scopes and expiration are currently managed by lev8 and cannot be customized during key creation.
+- Any active key can query its own billing account's [credit balance](/api-reference/credit-balance); Entity Search access still depends on the key's endpoint scope.
 - Multiple keys for the same user share the same user-level concurrency allowance.
 
 ## Authentication errors
@@ -31,5 +32,6 @@ Create a key from **API Tokens** in your lev8 workspace. The complete value is s
 | --- | --- |
 | `401` | The key is missing, malformed, or unknown. |
 | `403` | The key is revoked, expired, or lacks access to the endpoint. |
+| `500` | The credential service could not complete authentication. |
 
-Both responses use the standard [error envelope](/api-reference/errors) and do not reveal which credential check failed.
+These responses use the standard [error envelope](/api-reference/errors) and do not expose credential records or dependency details.
