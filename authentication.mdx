@@ -1,0 +1,35 @@
+---
+title: "Authentication"
+description: "Use lev8 API keys safely from trusted server-side environments."
+---
+
+The External API uses a dedicated API key in the `x-api-key` header. It does not accept lev8 user-session tokens or internal service keys.
+
+```http
+x-api-key: lev8_live_<public-prefix>_<secret>
+```
+
+## Create and store a key
+
+Create a key from **API Tokens** in your lev8 workspace. The complete value is shown once. After that, lev8 only displays a masked form such as `lev8_live_ab12cd34ef56_****`.
+
+<Warning>
+  Treat the complete key as a secret. Store it in a secrets manager or encrypted environment configuration. Never embed it in frontend JavaScript, mobile applications, public repositories, analytics events, or log messages.
+</Warning>
+
+## Key lifecycle
+
+- Keys belong to the user who created them.
+- Revocation takes effect immediately. Repeated revocation is safe.
+- Existing keys cannot be recovered from the dashboard; create a replacement and rotate clients instead.
+- API scopes and expiration are currently managed by lev8 and cannot be customized during key creation.
+- Multiple keys for the same user share the same user-level concurrency allowance.
+
+## Authentication errors
+
+| Status | Meaning |
+| --- | --- |
+| `401` | The key is missing, malformed, or unknown. |
+| `403` | The key is revoked, expired, or lacks access to the endpoint. |
+
+Both responses use the standard [error envelope](/api-reference/errors) and do not reveal which credential check failed.

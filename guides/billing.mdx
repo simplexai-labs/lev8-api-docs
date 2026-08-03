@@ -1,0 +1,35 @@
+---
+title: "Credits and billing"
+description: "Understand reservation, settlement, release, and reconciliation behavior."
+---
+
+Entity Search uses lev8 credits. Prices and enabled entity types are configured for each rollout; this documentation intentionally does not publish draft or test rates as production prices.
+
+## Request lifecycle
+
+<Steps>
+  <Step title="Reserve">
+    Before calling the search service, lev8 reserves the maximum possible cost: requested `limit` multiplied by the configured unit price. If the balance cannot cover the reservation, the API returns `402 insufficient_credits`.
+  </Step>
+  <Step title="Meter">
+    lev8 counts entities from unique `batch_index` values. A repeated identical batch is not metered twice.
+  </Step>
+  <Step title="Settle">
+    After a complete successful stream, lev8 charges for the metered entity count and returns the unused part of the reservation to its original credit buckets. A successful zero-result search settles at zero units.
+  </Step>
+  <Step title="Release or reconcile">
+    A failure before any entities are returned releases the full reservation. A failure after partial results, a client disconnect, a protocol failure, or a settlement failure can retain the reservation and mark the request for reconciliation.
+  </Step>
+</Steps>
+
+## Important boundaries
+
+- Billing is recorded synchronously in lev8's transactional ledger; it does not depend on asynchronous message delivery.
+- Promotional and standard credit buckets are restored to their original source when unused reserved credits are returned.
+- `[DONE]` confirms the SSE protocol ended, but settlement happens immediately after streaming and cannot be reported back on the completed stream.
+- Multiple API keys owned by the same user share the same billing subject and user-level concurrency allowance.
+- Contact Search pricing, enrichment surcharges, and final production Entity Search rates are not part of the current public contract.
+
+<Note>
+  If a stream returns partial results and then emits an `error`, retain `X-Request-Id` and `leads_search_id`. Do not automatically repeat the request with a new idempotency key.
+</Note>

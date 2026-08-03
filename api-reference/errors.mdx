@@ -1,0 +1,53 @@
+---
+title: "Errors"
+description: "Handle lev8 HTTP errors and failures that occur after an SSE stream begins."
+---
+
+Errors returned before streaming starts use a JSON envelope:
+
+```json
+{
+  "object": "error",
+  "error": {
+    "type": "invalid_request_error",
+    "message": "limit must be between 1 and 1000",
+    "param": "limit",
+    "request_id": "req_..."
+  }
+}
+```
+
+`param` and `request_id` are omitted when they are not available. A request ID may also appear in the `X-Request-Id` response header.
+
+## HTTP status codes
+
+| Status | Error type | Meaning |
+| --- | --- | --- |
+| `401` | `authentication_error` | API key is missing, malformed, or unknown. |
+| `402` | `insufficient_credits` | The account cannot reserve the maximum request cost. |
+| `403` | `authentication_error` | API key is revoked, expired, or lacks endpoint access. |
+| `409` | `idempotency_error` | The same idempotency key was reused with a different request body. |
+| `409` | `request_already_exists` | The same idempotent request already exists; SSE replay is not available. |
+| `422` | `invalid_request_error` | Content type, JSON structure, field value, or request size is invalid. |
+| `429` | `concurrency_limit` | The user-level or service-level concurrent request limit was reached. |
+| `500` | `internal_error` | An internal dependency or upstream operation failed before results streamed. |
+| `503` | `service_unavailable` | The endpoint or requested entity type is not enabled in this environment. |
+
+The API intentionally redacts upstream response bodies, internal request IDs, and implementation details.
+
+## Errors inside an SSE stream
+
+Once the stream starts, later errors are delivered as an SSE `error` object while the HTTP status remains `200`. See [Streaming events](/api-reference/streaming-events#errors-after-streaming-starts).
+
+## Retry guidance
+
+| Condition | Guidance |
+| --- | --- |
+| `422`, `401`, `403`, `402` | Fix the request, credential, or balance before retrying. |
+| `429` | Wait before starting a new request. The API currently does not return `Retry-After`. |
+| `500`, `503` before any result | Retry with backoff and a new idempotency key only after deciding the original request will not be recovered. |
+| In-stream `error` after results | Preserve all IDs and contact lev8 support. The request may require reconciliation; do not automatically repeat it. |
+
+<Tip>
+  Log the HTTP status, error `type`, `request_id`, `X-Request-Id`, and `leads_search_id`. Never log the API key or the full request if it contains sensitive search criteria.
+</Tip>
