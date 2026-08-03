@@ -1,4 +1,6 @@
 .git/
 .github/
+.agents/
 .mint-scaffold/
 README.md
+skills-lock.json
