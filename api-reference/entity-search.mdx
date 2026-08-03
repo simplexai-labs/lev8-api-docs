@@ -1,0 +1,124 @@
+---
+title: "Entity Search"
+description: "Search for people, companies, stores, and creators with a natural-language objective."
+---
+
+`POST /v1/entity-search` accepts one JSON object and returns a Server-Sent Events stream.
+
+## Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `Content-Type: application/json` | Yes | Other media types return `422`. |
+| `Accept: text/event-stream` | Recommended | Declares that the client expects an SSE response. |
+| `x-api-key` | Yes | Your active lev8 External API key. |
+| `Idempotency-Key` | Recommended | A unique value up to 128 characters for one logical request. |
+
+## Request body
+
+| Field | Type | Required | Constraints |
+| --- | --- | --- | --- |
+| `entity_type` | string | Yes | One of the supported values below. |
+| `objective` | string | Yes | Natural-language search objective, 1 to 4,000 UTF-8 bytes after trimming. |
+| `limit` | integer | No | Number of results requested, `1` to `1000`; defaults to `100`. |
+| `enrich_fields` | string[] | No | Additional fields to request, up to 20 items. Availability and cost depend on your access configuration. |
+| `dedup_lev8_leads` | string[] | No | Existing lev8 lead identifiers to exclude, up to 100 items. |
+| `dedup_custom_leads` | string[] | No | Your own lead identifiers to exclude, up to 1,000 items. |
+
+The complete request body must be at most 1 MiB. Unknown fields, malformed JSON, and multiple JSON objects are rejected.
+
+### Supported entity types
+
+- `person`
+- `company`
+- `twitter_creator`
+- `youtube_creator`
+- `tiktok_creator`
+- `instagram_creator`
+- `shopify_store`
+
+<Note>
+  A supported type can still return `503 service_unavailable` when it is not enabled or priced for the current environment. Access is rolled out per entity type.
+</Note>
+
+## Example request
+
+<CodeGroup>
+
+```bash cURL
+curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "Accept: text/event-stream" \
+  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  --data '{
+    "entity_type": "company",
+    "objective": "Developer tooling companies in Europe with recent seed funding",
+    "limit": 25,
+    "enrich_fields": ["website", "funding"]
+  }'
+```
+
+```javascript Node.js
+const response = await fetch(`${process.env.LEV8_API_BASE_URL}/v1/entity-search`, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "text/event-stream",
+    "x-api-key": process.env.LEV8_API_KEY,
+    "Idempotency-Key": crypto.randomUUID(),
+  },
+  body: JSON.stringify({
+    entity_type: "company",
+    objective: "Developer tooling companies in Europe with recent seed funding",
+    limit: 25,
+    enrich_fields: ["website", "funding"],
+  }),
+});
+
+if (!response.ok) {
+  throw new Error(`lev8 request failed with HTTP ${response.status}`);
+}
+
+for await (const chunk of response.body) {
+  process.stdout.write(Buffer.from(chunk).toString("utf8"));
+}
+```
+
+```python Python
+import os
+import uuid
+import requests
+
+response = requests.post(
+    f"{os.environ['LEV8_API_BASE_URL']}/v1/entity-search",
+    headers={
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+        "x-api-key": os.environ["LEV8_API_KEY"],
+        "Idempotency-Key": str(uuid.uuid4()),
+    },
+    json={
+        "entity_type": "company",
+        "objective": "Developer tooling companies in Europe with recent seed funding",
+        "limit": 25,
+        "enrich_fields": ["website", "funding"],
+    },
+    stream=True,
+    timeout=660,
+)
+response.raise_for_status()
+
+for line in response.iter_lines(decode_unicode=True):
+    if line:
+        print(line)
+```
+
+</CodeGroup>
+
+## Response
+
+On success, the response status is `200`, `Content-Type` is `text/event-stream`, and `X-Request-Id` contains the lev8 request ID. Read the stream as described in [Streaming events](/api-reference/streaming-events).
+
+The `entities` array is returned as live-web result data. Common fields include `name`, `links`, `description`, `score`, and requested enrichment data. Available fields vary by entity type and enrichment configuration; clients should ignore unknown fields and tolerate absent optional fields.

@@ -1,0 +1,55 @@
+---
+title: "lev8 API"
+description: "Search the live web for people, companies, and creators from your application."
+---
+
+The lev8 API turns a natural-language objective into a stream of matching entities. It is designed for server-side products that need live-web people and business intelligence without building a search pipeline from scratch.
+
+<Note>
+  External API access is being rolled out in stages. Your lev8 contact will provide the API base URL and enable the entity types available to your workspace.
+</Note>
+
+## Start with Entity Search
+
+Send an objective to `POST /v1/entity-search`. Results arrive incrementally over Server-Sent Events (SSE), so your application can process each batch before the full search finishes.
+
+```bash
+curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "Accept: text/event-stream" \
+  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  --data '{
+    "entity_type": "company",
+    "objective": "AI infrastructure startups in the United States founded since 2023",
+    "limit": 20
+  }'
+```
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Make your first streaming request and handle the result.
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Create, store, and rotate an API key safely.
+  </Card>
+  <Card title="Entity Search" icon="magnifying-glass" href="/api-reference/entity-search">
+    Review request fields, entity types, and response behavior.
+  </Card>
+  <Card title="Errors" icon="triangle-exclamation" href="/api-reference/errors">
+    Handle HTTP errors and failures after an SSE stream starts.
+  </Card>
+</CardGroup>
+
+## API behavior at a glance
+
+- Authentication uses an `x-api-key` header. API keys are separate from user sessions and internal service credentials.
+- Every accepted search gets a lev8 request ID. Preserve it when contacting support.
+- Results stream as `entity_search_batch` events, followed by `entity_search_done` and `[DONE]`.
+- Requests can reserve credits up to the requested limit and settle against the number of unique returned entities.
+- Idempotency prevents duplicate execution and duplicate billing; the current API does not replay a previous SSE response.
+
+<Warning>
+  Contact Search, email and phone lookup, usage-query endpoints, SSE replay, and client-controlled API scopes are not part of the current public API.
+</Warning>

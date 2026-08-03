@@ -1,0 +1,70 @@
+---
+title: "Quickstart"
+description: "Make your first Entity Search request and consume the SSE response."
+---
+
+## Before you begin
+
+You need:
+
+- An API base URL assigned by lev8.
+- An active API key with Entity Search access.
+- Enough credits to reserve the maximum cost of the request.
+- A server-side HTTP client that can consume Server-Sent Events (SSE).
+
+<Steps>
+  <Step title="Set server-side environment variables">
+    Keep API keys out of browser code, mobile apps, source control, and logs.
+
+    ```bash
+    export LEV8_API_BASE_URL="https://your-assigned-api-host"
+    export LEV8_API_KEY="lev8_live_..."
+    ```
+  </Step>
+
+  <Step title="Send a streaming search request">
+    Use `--no-buffer` so curl prints each SSE event as it arrives. Supply a unique `Idempotency-Key` for the logical request.
+
+    ```bash
+    curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
+      --request POST \
+      --header "Content-Type: application/json" \
+      --header "Accept: text/event-stream" \
+      --header "x-api-key: $LEV8_API_KEY" \
+      --header "Idempotency-Key: $(uuidgen)" \
+      --data '{
+        "entity_type": "person",
+        "objective": "VPs of Sales at Bay Area voice AI startups that launched in the last year",
+        "limit": 10,
+        "enrich_fields": ["current_company", "location"]
+      }'
+    ```
+  </Step>
+
+  <Step title="Process events until [DONE]">
+    A successful stream contains zero or more `entity_search_batch` objects, one `entity_search_done` object, and a final `[DONE]` sentinel.
+
+    ```text
+    data: {"object":"entity_search_batch","batch_index":1,"count":2,"cum_count":2,"entities":[...]}
+
+    data: {"object":"entity_search_done","cum_count":2,"stop_reason":"source_finished","finish":true}
+
+    data: [DONE]
+    ```
+  </Step>
+</Steps>
+
+<Tip>
+  Save the `X-Request-Id` response header and the `leads_search_id` from stream events. They identify different layers of the request and are both useful when diagnosing a search.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Request fields" icon="sliders" href="/api-reference/entity-search">
+    Choose an entity type, limit, enrichments, and deduplication inputs.
+  </Card>
+  <Card title="Build a resilient consumer" icon="wave-pulse" href="/api-reference/streaming-events">
+    Parse complete SSE frames, deduplicate batches, and handle stream errors.
+  </Card>
+</CardGroup>

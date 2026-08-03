@@ -1,0 +1,88 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "lev8 API",
+  "description": "Build live-web people and business intelligence into your product.",
+  "colors": {
+    "primary": "#D99A00",
+    "light": "#FFBB17",
+    "dark": "#FFCB45"
+  },
+  "favicon": "/favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg"
+  },
+  "navigation": {
+    "pages": [
+      {
+        "group": "Getting started",
+        "pages": [
+          "index",
+          "quickstart",
+          "authentication"
+        ]
+      },
+      {
+        "group": "API reference",
+        "pages": [
+          "api-reference/entity-search",
+          "api-reference/streaming-events",
+          "api-reference/errors"
+        ]
+      },
+      {
+        "group": "Guides",
+        "pages": [
+          "guides/idempotency",
+          "guides/billing"
+        ]
+      }
+    ],
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Lev8",
+          "href": "https://lev8.com",
+          "icon": "arrow-up-right-from-square"
+        },
+        {
+          "anchor": "GitHub",
+          "href": "https://github.com/simplexai-labs/lev8-api-docs",
+          "icon": "github"
+        }
+      ]
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Lev8",
+        "href": "https://lev8.com"
+      }
+    ],
+    "primary": {
+      "type": "button",
+      "label": "Get started",
+      "href": "/quickstart"
+    }
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "mcp",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/simplexai-labs",
+      "website": "https://lev8.com"
+    }
+  }
+}
