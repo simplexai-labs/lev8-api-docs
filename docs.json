@@ -27,6 +27,7 @@
         "group": "API reference",
         "pages": [
           "api-reference/entity-search",
+          "api-reference/credit-balance",
           "api-reference/streaming-events",
           "api-reference/errors"
         ]
