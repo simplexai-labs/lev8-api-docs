@@ -18,19 +18,22 @@ The endpoint does not accept a user ID or another billing-account identifier. Th
 <CodeGroup>
 
 ```bash cURL
-curl "$LEV8_API_BASE_URL/v1/credit/balance" \
+curl "https://app.lev8.com/v1/credit/balance" \
   --header "x-api-key: $LEV8_API_KEY"
 ```
 
 ```javascript Node.js
-const response = await fetch(`${process.env.LEV8_API_BASE_URL}/v1/credit/balance`, {
+const response = await fetch("https://app.lev8.com/v1/credit/balance", {
   headers: {
     "x-api-key": process.env.LEV8_API_KEY,
   },
 });
 
 if (!response.ok) {
-  throw new Error(`lev8 request failed with HTTP ${response.status}`);
+  const apiError = await response.json().catch(() => null);
+  throw new Error(
+    apiError?.error?.message ?? `lev8 request failed with HTTP ${response.status}`,
+  );
 }
 
 const balance = await response.json();
@@ -38,17 +41,32 @@ console.log(balance.available_credits);
 ```
 
 ```python Python
+import asyncio
+import json
 import os
-import requests
+import httpx
 
-response = requests.get(
-    f"{os.environ['LEV8_API_BASE_URL']}/v1/credit/balance",
-    headers={"x-api-key": os.environ["LEV8_API_KEY"]},
-    timeout=30,
-)
-response.raise_for_status()
 
-print(response.json()["available_credits"])
+async def get_credit_balance() -> None:
+    async with httpx.AsyncClient(timeout=30) as client:
+        response = await client.get(
+            "https://app.lev8.com/v1/credit/balance",
+            headers={"x-api-key": os.environ["LEV8_API_KEY"]},
+        )
+        if response.is_error:
+            try:
+                message = response.json().get("error", {}).get("message")
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                message = None
+            raise RuntimeError(
+                message or f"lev8 request failed with HTTP {response.status_code}"
+            )
+
+        print(response.json()["available_credits"])
+
+
+if __name__ == "__main__":
+    asyncio.run(get_credit_balance())
 ```
 
 </CodeGroup>

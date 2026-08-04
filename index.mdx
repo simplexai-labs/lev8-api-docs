@@ -6,7 +6,7 @@ description: "Search the live web for entities and contact details from your app
 The lev8 API turns a natural-language objective into matching entities or a requested contact detail. It is designed for server-side products that need live-web people and business intelligence without building a search pipeline from scratch.
 
 <Note>
-  External API access is being rolled out in stages. Your lev8 contact will provide the API base URL and enable the entity and contact types available to your workspace.
+  The API base URL is `https://app.lev8.com`. External API access is being rolled out in stages, and your lev8 contact will enable the entity and contact types available to your workspace.
 </Note>
 
 ## Start with Entity Search
@@ -14,7 +14,7 @@ The lev8 API turns a natural-language objective into matching entities or a requ
 Send an objective to `POST /v1/entity-search`. Results arrive incrementally over Server-Sent Events (SSE), so your application can process each batch before the full search finishes.
 
 ```bash
-curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
+curl --no-buffer "https://app.lev8.com/v1/entity-search" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "Accept: text/event-stream" \
