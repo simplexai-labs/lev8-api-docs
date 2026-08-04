@@ -8,11 +8,17 @@ Fetches available entities from a search task. The client tracks `pts` locally a
 
 ## Query parameters
 
-| Parameter | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `leads_search_id` | string | Yes | The task ID returned by `create_task`. |
-| `pts` | integer | No | `0` | Zero-based result start position. |
-| `num` | integer | No | `5` | Maximum number of results to return in this call. |
+<ParamField query="leads_search_id" type="string" required>
+  The task ID returned by `create_task`.
+</ParamField>
+
+<ParamField query="pts" type="integer" default="0">
+  Zero-based result start position.
+</ParamField>
+
+<ParamField query="num" type="integer" default="5">
+  Maximum number of results to return in this call.
+</ParamField>
 
 ## Example
 

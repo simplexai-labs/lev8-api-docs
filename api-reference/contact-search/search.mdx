@@ -8,18 +8,27 @@ Searches for one email address or phone number and returns a JSON response.
 
 ## Headers
 
-| Header | Required | Description |
-| --- | --- | --- |
-| `Content-Type: application/json` | Yes | Request body must be JSON. |
-| `x-api-key` | Yes | Your active lev8 External API key with Contact Search access. |
-| `Idempotency-Key` | Recommended | A unique value up to 128 characters for one logical lookup request. |
+<ParamField header="Content-Type" type="string" required>
+  Use `application/json`.
+</ParamField>
+
+<ParamField header="x-api-key" type="string" required>
+  Your active lev8 External API key with Contact Search access.
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string">
+  A unique value up to 128 characters for one logical lookup request.
+</ParamField>
 
 ## Request body
 
-| Field | Type | Required | Description |
-| --- | --- | --- | --- |
-| `contact_type` | string enum | Yes | `email` or `phone`. |
-| `objective` | string | Yes | Natural-language description of whose email or phone number to find. Include identity signals such as platform URLs or handles when available. |
+<ParamField body="contact_type" type="string" required>
+  Contact type to find: `email` or `phone`.
+</ParamField>
+
+<ParamField body="objective" type="string" required>
+  Natural-language description of whose email or phone number to find. Include identity signals such as platform URLs or handles when available.
+</ParamField>
 
 ## Example
 
