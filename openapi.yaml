@@ -38,6 +38,7 @@ components:
                 - "null"
     EntitySearchCreateTaskRequest:
       type: object
+      additionalProperties: false
       required:
         - entity_type
         - objective
@@ -56,10 +57,14 @@ components:
           example: company
         objective:
           type: string
+          minLength: 1
+          description: Natural-language objective, at most 4,000 UTF-8 bytes after trimming.
           x-default: "AI startups that raised Series A in 2024"
           example: "AI startups that raised Series A in 2024"
         limit:
           type: integer
+          minimum: 1
+          maximum: 500
           default: 20
           x-default: 20
           example: 20
@@ -74,6 +79,7 @@ components:
             - "null"
           items:
             type: string
+          maxItems: 20
           x-default:
             - funding stage
             - headcount
@@ -82,12 +88,14 @@ components:
             - headcount
         dedup_lev8_leads:
           type: array
+          maxItems: 100
           items:
             type: string
           x-default: []
           example: []
         dedup_custom_leads:
           type: array
+          maxItems: 1000
           items:
             type: string
           x-default: []
@@ -126,18 +134,6 @@ components:
         leads_search_id:
           type: string
           example: leads_search_01JABCDEF123456789
-        meta:
-          type: object
-          properties:
-            entity_type:
-              type: string
-              example: company
-            objective:
-              type: string
-              example: AI startups that raised Series A in 2024
-            limit:
-              type: integer
-              example: 20
         status:
           type: object
           properties:
@@ -151,27 +147,18 @@ components:
               example: running
             verified_count:
               type: integer
+              minimum: 0
               example: 12
             ready_count:
               type: integer
+              minimum: 0
               example: 10
             stop_reason:
-              type:
-                - string
-                - "null"
-              example: null
-        error:
-          type:
-            - object
-            - "null"
-        created_at:
-          type: string
-          format: date-time
-          example: "2026-08-04T00:00:00Z"
-        updated_at:
-          type: string
-          format: date-time
-          example: "2026-08-04T00:00:08Z"
+              type: string
+              example: source_finished
+            error:
+              type: string
+              const: internal error
     EntitySearchItems:
       type: object
       properties:
@@ -241,12 +228,9 @@ components:
                   funding stage:
                     content: Series B
                     reference: "..."
-        created_at:
-          type: string
-          format: date-time
-          example: "2026-08-04T00:00:05Z"
     ContactSearchRequest:
       type: object
+      additionalProperties: false
       required:
         - contact_type
         - objective
@@ -260,6 +244,8 @@ components:
           example: email
         objective:
           type: string
+          minLength: 1
+          maxLength: 4000
           x-default: "Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997"
           example: "Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997"
     ContactSearchResult:
@@ -310,6 +296,16 @@ paths:
       summary: Create task
       description: Create an asynchronous Entity Search task.
       operationId: createEntitySearchTask
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          description: Stable key for this logical task, from 1 to 128 characters.
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 128
+            x-default: 550e8400-e29b-41d4-a716-446655440000
       requestBody:
         required: true
         content:
@@ -333,18 +329,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/EntitySearchTask"
-        "400":
-          description: Malformed JSON.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
         "401":
           description: Missing or invalid API key.
+        "402":
+          description: Insufficient credits.
+        "403":
+          description: API key is forbidden or lacks Entity Search access.
+        "409":
+          description: Idempotency conflict or task creation is still unresolved.
         "422":
           description: Validation failed.
+        "429":
+          description: Active-task concurrency limit reached.
         "500":
           description: Server error.
+        "503":
+          description: Entity Search or pricing is not enabled.
   /v1/entity-search/status:
     get:
       summary: Get status
@@ -356,6 +356,8 @@ paths:
           required: true
           schema:
             type: string
+            minLength: 1
+            maxLength: 128
             x-default: leads_search_01JABCDEF123456789
           example: leads_search_01JABCDEF123456789
       responses:
@@ -367,10 +369,16 @@ paths:
                 $ref: "#/components/schemas/EntitySearchStatus"
         "401":
           description: Missing or invalid API key.
+        "403":
+          description: API key is forbidden or lacks Entity Search access.
         "404":
-          description: Task not found or expired.
+          description: Task not found or belongs to another API key.
+        "422":
+          description: Query validation failed.
         "500":
           description: Server error.
+        "503":
+          description: Entity Search is not enabled.
   /v1/entity-search/fetch:
     get:
       summary: Fetch results
@@ -382,6 +390,7 @@ paths:
           required: true
           schema:
             type: string
+            minLength: 1
             x-default: leads_search_01JABCDEF123456789
           example: leads_search_01JABCDEF123456789
         - name: pts
@@ -389,6 +398,7 @@ paths:
           required: false
           schema:
             type: integer
+            minimum: 0
             default: 0
             x-default: 0
           example: 0
@@ -397,6 +407,8 @@ paths:
           required: false
           schema:
             type: integer
+            minimum: 1
+            maximum: 500
             default: 5
             x-default: 5
           example: 5
@@ -409,17 +421,30 @@ paths:
                 $ref: "#/components/schemas/EntitySearchItems"
         "401":
           description: Missing or invalid API key.
+        "403":
+          description: API key is forbidden or lacks Entity Search access.
         "404":
-          description: Task not found or expired.
-        "416":
-          description: pts is outside the currently readable range.
+          description: Task not found or belongs to another API key.
+        "422":
+          description: Query validation failed.
         "500":
           description: Server error.
+        "503":
+          description: Entity Search is not enabled.
   /v1/contact-search:
     post:
       summary: Search contact
       description: Find an email address or phone number for one contact.
       operationId: contactSearch
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Stable key for replaying this logical lookup.
+          schema:
+            type: string
+            maxLength: 128
+            x-default: 550e8400-e29b-41d4-a716-446655440000
       requestBody:
         required: true
         content:
@@ -438,10 +463,20 @@ paths:
                 $ref: "#/components/schemas/ContactSearchResult"
         "401":
           description: Missing or invalid API key.
+        "402":
+          description: Insufficient credits.
+        "403":
+          description: API key is forbidden or lacks Contact Search access.
+        "409":
+          description: Idempotency conflict or no completed response is available to replay.
         "422":
           description: Validation failed.
+        "429":
+          description: Concurrency limit reached.
         "500":
           description: Server error.
+        "503":
+          description: Contact Search or pricing is not enabled.
   /v1/credit/balance:
     get:
       summary: Get balance
@@ -460,3 +495,5 @@ paths:
           description: API key is revoked or expired.
         "500":
           description: Server error.
+        "503":
+          description: External API is not enabled.

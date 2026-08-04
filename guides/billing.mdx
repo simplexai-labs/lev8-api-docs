@@ -1,48 +1,50 @@
 ---
 title: "Credits and billing"
-description: "Understand reservation, settlement, release, and reconciliation behavior."
+description: "Understand Entity Search reservation, terminal settlement, recovery, and Contact Search charging."
 ---
 
-Entity Search and Contact Search use lev8 credits. Prices, enabled entity types, enabled contact types, and Contact Search billing mode are configured for each rollout; this documentation intentionally does not publish draft or test rates as production prices.
+Entity Search and Contact Search use lev8 credits. Enabled types and prices are configured for each rollout; this documentation does not publish draft or test rates as production prices.
 
 ## Check available credits
 
-Call [`GET /v1/credit/balance`](/api-reference/credit-balance) with an active API key to read the credits currently available for a new request. The value combines all usable credit sources and excludes credits already reserved by in-progress requests.
+Call [`GET /v1/credit/balance`](/api-reference/credit-balance/get-balance) with an active API key. `available_credits` combines all usable sources and excludes credits already reserved by active requests.
 
-The balance response is deliberately account-level: it does not expose paid, monthly, subscription, or promotional bucket details, and it cannot be used to query another user. Responses include `Cache-Control: no-store`.
+The response does not expose paid, monthly, subscription, or promotional bucket details, and it cannot query another user. Responses include `Cache-Control: no-store`.
 
-## Request lifecycle
+## Entity Search lifecycle
 
 <Steps>
   <Step title="Reserve">
-    Before creating an Entity Search task, lev8 reserves the maximum possible cost: requested `limit` multiplied by the configured unit price. If the balance cannot cover the reservation, the API returns `402 insufficient_credits`.
+    Before creating the upstream task, lev8 freezes the configured startup fee plus `limit × result unit price`. `enable_web_search` can select a different startup fee. Insufficient balance returns `402 insufficient_credits`.
   </Step>
-  <Step title="Produce">
-    The task verifies candidates and produces deduplicated leads up to `limit`. `fetch.num` only controls how many results one read can return; it does not change the task limit.
+  <Step title="Run">
+    The task occupies user-level and global active-task capacity until it reaches a terminal state. lev8 continues monitoring it even when the client is disconnected.
   </Step>
   <Step title="Settle">
-    When the task reaches a terminal state, lev8 charges for the metered entity count and returns the unused part of the reservation to its original credit buckets. A successful zero-result search settles at zero units.
+    A `done` task charges the startup fee plus `ready_count × result unit price`. An `error` task refunds the startup fee and charges only its `ready_count` results. All unused frozen credits return to their original sources.
   </Step>
-  <Step title="Release or reconcile">
-    A failure before any entities are produced releases the full reservation. Partial results, a client interruption, a task failure, or a settlement failure can retain the reservation and mark the request for reconciliation.
+  <Step title="Recover">
+    A task with an unknown creation result or no terminal state keeps its reservation temporarily. After the configured recovery period, lev8 refunds it and releases the active-task slot.
   </Step>
 </Steps>
 
-## Cost factors
+Status requests and background processing share the same idempotent terminal settlement behavior. Repeated finalization cannot charge the task twice.
 
-- `limit` controls the maximum number of deduplicated leads the task can produce and the maximum reservation.
-- `enable_web_search: true` adds open web search mode on top of database search and usually increases latency and cost.
-- `enrich_fields` can add cost depending on rollout configuration.
-- Contact Search reserves one lookup at its configured email or phone price. Depending on the rollout, a completed request is charged either per request or only when `result.content` contains a result.
+<Note>
+  `ready_count` is the billing result count. `verified_count` also includes candidates that were checked and rejected, so it is not used as the charged quantity.
+</Note>
+
+## Contact Search
+
+Contact Search freezes the configured email or phone price before calling the search service. It charges only when `result.content` is non-empty after trimming. A not-found response costs zero credits and releases the full reservation.
+
+The successful response and settlement are saved together. Replaying the same API key, `Idempotency-Key`, and body returns the saved JSON without another upstream request or charge.
 
 ## Important boundaries
 
-- Billing is recorded synchronously in lev8's transactional ledger; it does not depend on how often a client calls `fetch`.
-- Promotional and standard credit buckets are restored to their original source when unused reserved credits are returned.
-- Multiple API keys owned by the same user share the same billing subject and user-level concurrency allowance.
-- Contact Search validates the upstream JSON and settles before returning a successful response. Upstream or protocol failures release the reservation; settlement uncertainty returns an error and requires reconciliation.
-- Contact Search pricing, enrichment surcharges, and final production Entity Search rates are provided separately for each rollout rather than published here.
-
-<Note>
-  If an Entity Search task fails after partial results are produced, retain `X-Request-Id` and `leads_search_id`. Do not automatically start a second billable task before resolving the original state.
-</Note>
+- Billing is recorded transactionally and does not depend on asynchronous message delivery.
+- Multiple API keys owned by the same user share the same balance and user-level concurrency limit.
+- Entity Search concurrency counts active asynchronous tasks, not HTTP connections. Status and Fetch do not consume new slots.
+- An Entity task with terminal `error` can still contain charged, readable results.
+- Upstream failures and internal details are redacted from public responses.
+- Pricing is supplied separately for each enabled rollout.

@@ -1,73 +1,210 @@
 ---
 title: "Task results"
-description: "Read Entity Search results with task status, ready counts, and position-based fetches."
+description: "Create an Entity Search task, monitor progress, and fetch every available result."
 ---
 
-Entity Search results are read from an asynchronous task. The server does not return pages or cursors. Your client tracks a numeric position, `pts`, and advances it by the `count` returned from each fetch.
+Entity Search separates task creation from result retrieval. This keeps long-running searches independent from a single HTTP connection and lets clients read completed results while discovery continues.
 
-## Lifecycle
+<Steps>
+  <Step title="Create the task">
+    Call [`POST /v1/entity-search/create_task`](/api-reference/entity-search/create-task) with a required `Idempotency-Key`. Save the returned `leads_search_id` and `X-Request-Id`.
+  </Step>
+  <Step title="Monitor progress">
+    Call [`GET /v1/entity-search/status`](/api-reference/entity-search/status). `ready_count` is the number of results currently available; `verified_count` includes accepted and rejected candidates.
+  </Step>
+  <Step title="Fetch available results">
+    Call [`GET /v1/entity-search/fetch`](/api-reference/entity-search/fetch) with a positional `pts`. Advance it by the returned `count`, not by the requested page size.
+  </Step>
+  <Step title="Finish locally">
+    Stop after the task reaches `done` or `error` and your next position is at least `ready_count`. An `error` task can still contain billable, readable results.
+  </Step>
+</Steps>
 
-| Status | Meaning | Client action |
+## Task states
+
+| State | Meaning | Client action |
 | --- | --- | --- |
-| `created` | The task was accepted and is queued or starting. | Poll `status` or try `fetch` after a short delay. |
-| `running` | The task is still verifying candidates. | Fetch any results with `ready_count > pts`, then poll again. |
-| `done` | The producer has stopped. | Continue fetching until `pts >= ready_count`. |
-| `error` | The task failed after being accepted. | Stop reading, keep `leads_search_id`, and inspect `error`. |
+| `created` | The task was accepted. | Begin polling. |
+| `running` | Discovery or verification is in progress. | Fetch new ready results, then wait before polling again. |
+| `done` | Search completed normally. | Fetch through the final `ready_count`. |
+| `error` | Search stopped with a redacted internal error. | Fetch through the final `ready_count`, then record the task as failed or partial. |
 
-<Warning>
-  `done` means no more results will be produced. It does not mean your client has already read every available result. Finish only after `status` is `done` and your local `pts` is greater than or equal to `ready_count`.
-</Warning>
+The service also polls active tasks in the background, so clients do not need to poll continuously to keep a task alive. A status request can advance terminal billing settlement when it observes completion.
 
-## Fetch positions
+## Complete Node.js workflow
 
-Use `GET /v1/entity-search/fetch` with:
-
-| Parameter | Description |
-| --- | --- |
-| `leads_search_id` | Search task ID returned by `create_task`. |
-| `pts` | Zero-based result position to start reading from. Defaults to `0`. |
-| `num` | Maximum number of results to read in this call. Defaults to `5`. |
-
-Each response includes:
-
-| Field | Description |
-| --- | --- |
-| `pts` | The start position used by this fetch. |
-| `num` | The requested maximum result count. |
-| `count` | The number of entities actually returned. |
-| `ready_count` | The number of entities currently available to read. |
-| `status` | Current task status. |
-
-To fetch the next batch, set the next `pts` to the previous `pts + count`.
-
-## Read loop
+This example uses Node.js 18 or later and processes each available result exactly once.
 
 ```javascript
+import { setTimeout as delay } from "node:timers/promises";
+
+const baseUrl = "https://app.lev8.com";
+const apiKey = process.env.LEV8_API_KEY;
+
+async function lev8Json(path, options = {}) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    ...options,
+    headers: {
+      Accept: "application/json",
+      "x-api-key": apiKey,
+      ...options.headers,
+    },
+  });
+  const requestId = response.headers.get("x-request-id");
+  const body = await response.json();
+  if (!response.ok) {
+    throw new Error(
+      body.error?.message ??
+        `lev8 request failed with HTTP ${response.status} (request_id=${requestId ?? "unknown"})`,
+    );
+  }
+  return { body, requestId };
+}
+
+const created = await lev8Json("/v1/entity-search/create_task", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "Idempotency-Key": crypto.randomUUID(),
+  },
+  body: JSON.stringify({
+    entity_type: "company",
+    objective: "Developer tooling companies in Europe with recent seed funding",
+    limit: 20,
+    enrich_fields: ["website", "funding stage"],
+  }),
+});
+
+const leadsSearchId = created.body.leads_search_id;
+const entities = [];
 let pts = 0;
-const num = 5;
+let terminalStatus = null;
 
 while (true) {
-  const status = await getStatus(leadsSearchId);
-  const state = status.status.status;
-  if (state === "error") throw new Error(status.error?.message ?? "search failed");
+  const statusUrl = new URL("/v1/entity-search/status", baseUrl);
+  statusUrl.searchParams.set("leads_search_id", leadsSearchId);
+  const { body: statusBody } = await lev8Json(`${statusUrl.pathname}${statusUrl.search}`);
+  const task = statusBody.status;
 
-  while (pts < status.status.ready_count) {
-    const page = await fetchResults(leadsSearchId, { pts, num });
-    processEntities(page.entities);
-    if (page.count === 0) break;
+  while (pts < task.ready_count) {
+    const fetchUrl = new URL("/v1/entity-search/fetch", baseUrl);
+    fetchUrl.search = new URLSearchParams({
+      leads_search_id: leadsSearchId,
+      pts: String(pts),
+      num: "100",
+    });
+    const { body: page } = await lev8Json(`${fetchUrl.pathname}${fetchUrl.search}`);
+    if (page.count === 0) throw new Error("lev8 returned an empty page before ready_count");
+    entities.push(...page.entities);
     pts += page.count;
   }
 
-  if (state === "done" && pts >= status.status.ready_count) break;
-  await sleep(3000);
+  if (task.status === "done" || task.status === "error") {
+    terminalStatus = task;
+    break;
+  }
+  await delay(5000);
 }
+
+console.log({ leadsSearchId, terminalStatus, entities });
 ```
 
-## Practical rules
+## Complete Python workflow
 
-- `limit` controls the total number of deduplicated leads the task can produce.
-- `num` controls only the maximum number of results returned by one `fetch` call.
-- A `fetch` response can return fewer than `num` entities.
-- If `ready_count` is `0`, wait and poll again unless the task is `done`.
-- If `fetch` returns `416`, call `status` and resume from a valid `pts` within `0 <= pts < ready_count`.
-- Store `leads_search_id` with your own job record. It is required for status checks, fetches, support, and later `dedup_lev8_leads` requests.
+Install the asynchronous HTTP client with `python -m pip install httpx`.
+
+```python
+import asyncio
+import os
+import uuid
+import httpx
+
+
+BASE_URL = "https://app.lev8.com"
+API_KEY = os.environ["LEV8_API_KEY"]
+
+
+async def lev8_json(client, method, path, **kwargs):
+    headers = {
+        "Accept": "application/json",
+        "x-api-key": API_KEY,
+        **kwargs.pop("headers", {}),
+    }
+    response = await client.request(method, path, headers=headers, **kwargs)
+    request_id = response.headers.get("x-request-id")
+    body = response.json()
+    if response.is_error:
+        message = body.get("error", {}).get("message")
+        raise RuntimeError(
+            message
+            or f"lev8 request failed with HTTP {response.status_code} "
+            f"(request_id={request_id or 'unknown'})"
+        )
+    return body, request_id
+
+
+async def entity_search():
+    timeout = httpx.Timeout(connect=10, read=60, write=30, pool=10)
+    async with httpx.AsyncClient(base_url=BASE_URL, timeout=timeout) as client:
+        created, request_id = await lev8_json(
+            client,
+            "POST",
+            "/v1/entity-search/create_task",
+            headers={"Idempotency-Key": str(uuid.uuid4())},
+            json={
+                "entity_type": "company",
+                "objective": "Developer tooling companies in Europe with recent seed funding",
+                "limit": 20,
+                "enrich_fields": ["website", "funding stage"],
+            },
+        )
+        leads_search_id = created["leads_search_id"]
+        entities = []
+        pts = 0
+
+        while True:
+            status_body, _ = await lev8_json(
+                client,
+                "GET",
+                "/v1/entity-search/status",
+                params={"leads_search_id": leads_search_id},
+            )
+            task = status_body["status"]
+
+            while pts < task["ready_count"]:
+                page, _ = await lev8_json(
+                    client,
+                    "GET",
+                    "/v1/entity-search/fetch",
+                    params={
+                        "leads_search_id": leads_search_id,
+                        "pts": pts,
+                        "num": 100,
+                    },
+                )
+                if page["count"] == 0:
+                    raise RuntimeError("lev8 returned an empty page before ready_count")
+                entities.extend(page["entities"])
+                pts += page["count"]
+
+            if task["status"] in {"done", "error"}:
+                return {
+                    "request_id": request_id,
+                    "leads_search_id": leads_search_id,
+                    "terminal_status": task,
+                    "entities": entities,
+                }
+            await asyncio.sleep(5)
+
+
+if __name__ == "__main__":
+    print(asyncio.run(entity_search()))
+```
+
+## Recovery guidance
+
+- Persist the `Idempotency-Key`, `X-Request-Id`, and `leads_search_id` before treating task creation as complete.
+- Reuse the original create key and body after a lost response. Do not generate a new key merely because the client timed out.
+- Resume fetching from the first `pts` that your application has not committed.
+- Back off between status calls. Active tasks continue progressing without a live client connection.
+- Treat unknown fields and new `stop_reason` values as forward-compatible data.

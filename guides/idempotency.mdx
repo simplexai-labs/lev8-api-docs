@@ -1,0 +1,43 @@
+---
+title: "Idempotency"
+description: "Replay the same logical request without duplicate search execution or billing."
+---
+
+Use an `Idempotency-Key` for every paid POST operation.
+
+```http
+Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000
+```
+
+The header is required by Entity Search `create_task` and optional but strongly recommended for Contact Search. Keys are trimmed and must contain at most 128 characters.
+
+## Scope
+
+Idempotency is scoped to the exact API credential and key. Two API keys owned by the same user do not share idempotency records, even though they share billing and user-level concurrency.
+
+The request body is normalized and hashed. Reusing a key with different input returns `409 idempotency_error` and does not start another search.
+
+## Replay behavior
+
+| Operation | Same key and same input |
+| --- | --- |
+| Entity Search `create_task` | Returns the existing task and original request ID when a stable task handle is available. Returns `409 request_in_progress` while creation remains unresolved. |
+| Contact Search | Replays the saved successful JSON response and original request ID after settlement. Returns `409 request_already_exists` when no completed response is available. |
+
+Neither successful replay calls the upstream search service or bills the request again.
+
+## Recommended pattern
+
+1. Generate a UUID when your application creates a logical operation.
+2. Persist the key and canonical input before sending the request.
+3. Reuse both after a timeout, disconnect, process restart, or Agent workflow resume.
+4. Store the returned `X-Request-Id` and `leads_search_id` with the same operation.
+5. Generate a new key only for an intentional new search.
+
+<Warning>
+  A timeout does not prove that task creation or Contact Search failed. Retrying with a new key can create a second billable operation.
+</Warning>
+
+## MCP behavior
+
+The MCP adapter accepts an optional `idempotency_key` for `entity_search_create` and `contact_search`. It generates a secure random key when omitted, but a caller-provided stable key is safer for resumable Agent workflows. The adapter does not automatically retry paid POST operations.

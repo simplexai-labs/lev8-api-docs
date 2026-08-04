@@ -1,6 +1,6 @@
 # lev8 API documentation
 
-Public Mintlify documentation for the lev8 External API, including Entity Search, Contact Search, and API-key credit balance reference pages.
+Public Mintlify documentation for the lev8 External API, including asynchronous Entity Search, Contact Search, API-key credit balance, and the local stdio MCP adapter.
 
 ## Local preview
 

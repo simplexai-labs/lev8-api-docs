@@ -23,6 +23,12 @@
       "prefill": true
     }
   },
+  "redirects": [
+    {
+      "source": "/api-reference/streaming-events",
+      "destination": "/api-reference/task-results"
+    }
+  ],
   "seo": {
     "metatags": {
       "canonical": "https://docs.lev8.com"
@@ -81,7 +87,14 @@
         "pages": [
           "api-reference/task-results",
           "api-reference/errors",
+          "guides/idempotency",
           "guides/billing"
+        ]
+      },
+      {
+        "group": "MCP",
+        "pages": [
+          "mcp"
         ]
       }
     ],
