@@ -64,11 +64,6 @@
           "anchor": "Lev8",
           "href": "https://lev8.com",
           "icon": "arrow-up-right-from-square"
-        },
-        {
-          "anchor": "GitHub",
-          "href": "https://github.com/simplexai-labs/lev8-api-docs",
-          "icon": "github"
         }
       ]
     }
