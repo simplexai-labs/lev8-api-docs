@@ -29,6 +29,7 @@ HTTP errors use a JSON envelope:
 | `404` | `not_found` | An Entity Search task does not exist or belongs to another API key. |
 | `409` | `idempotency_error` | The same idempotency key was reused with different input. |
 | `409` | `request_in_progress` | Entity task creation has not produced a stable task handle yet. |
+| `409` | `request_expired` | The Entity Search replay window expired and the old task is no longer accessible. |
 | `409` | `request_already_exists` | A Contact Search with this key exists but has no completed response to replay. |
 | `422` | `invalid_request_error` | A header, JSON body, query parameter, field value, or request size is invalid. |
 | `429` | `concurrency_limit` | The user-level or global concurrency limit was reached. |
@@ -64,10 +65,11 @@ The task failed, but its five ready results remain available through Fetch.
 | --- | --- |
 | `401`, `402`, `403`, `404`, `422` | Fix the credential, balance, task ID, or request before retrying. |
 | `429` | Wait before creating another task or Contact Search. The API does not currently return `Retry-After`. |
-| Lost Entity Search create response | Retry the same body with the same `Idempotency-Key`; do not create a new logical task. |
+| Lost Entity Search create response | If you supplied a stable `Idempotency-Key`, retry the same body with that key; do not create a new logical task. |
 | `409 request_in_progress` | Preserve the original key and request ID. Wait before retrying the same create request. |
+| `409 request_expired` | Treat the old task as closed. Start a new logical search only when you intentionally accept a new charge. |
 | Entity Status or Fetch `500` | Retry that read with backoff. Keep the original `leads_search_id`. |
-| Lost Contact Search response | Retry the same body with the same key. A completed response is replayed without another upstream call or charge. |
+| Lost Contact Search response | Retry the same body with the same known key. A completed response is replayed without another search call or charge. |
 | `500` during a paid POST | Do not switch to a new key automatically; the original request may still require recovery. |
 
 <Tip>

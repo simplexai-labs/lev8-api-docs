@@ -30,6 +30,8 @@ The response does not expose paid, monthly, subscription, or promotional bucket 
 
 Status requests and background processing share the same idempotent terminal settlement behavior. Repeated finalization cannot charge the task twice.
 
+The recovery deadline is fixed when the reservation is created. Status and Fetch calls do not extend it. After the deadline and any in-flight response delivery complete, lev8 refunds an unresolved reservation, releases the active-task slot, and stops exposing the old task results.
+
 <Note>
   `ready_count` is the billing result count. `verified_count` also includes candidates that were checked and rejected, so it is not used as the charged quantity.
 </Note>

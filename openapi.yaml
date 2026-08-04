@@ -299,13 +299,11 @@ paths:
       parameters:
         - name: Idempotency-Key
           in: header
-          required: true
-          description: Stable key for this logical task, from 1 to 128 characters.
+          required: false
+          description: Optional stable key for this logical task. When omitted, lev8 generates one and returns it in the response Header.
           schema:
             type: string
-            minLength: 1
             maxLength: 128
-            x-default: 550e8400-e29b-41d4-a716-446655440000
       requestBody:
         required: true
         content:
@@ -325,6 +323,11 @@ paths:
       responses:
         "200":
           description: Task created.
+          headers:
+            Idempotency-Key:
+              description: The supplied or server-generated idempotency key.
+              schema:
+                type: string
           content:
             application/json:
               schema:
@@ -336,7 +339,7 @@ paths:
         "403":
           description: API key is forbidden or lacks Entity Search access.
         "409":
-          description: Idempotency conflict or task creation is still unresolved.
+          description: Idempotency conflict, unresolved task creation, or an expired replay window.
         "422":
           description: Validation failed.
         "429":
@@ -440,11 +443,10 @@ paths:
         - name: Idempotency-Key
           in: header
           required: false
-          description: Stable key for replaying this logical lookup.
+          description: Optional stable key for this logical lookup. When omitted, lev8 generates one and returns it in the response Header.
           schema:
             type: string
             maxLength: 128
-            x-default: 550e8400-e29b-41d4-a716-446655440000
       requestBody:
         required: true
         content:
@@ -457,6 +459,11 @@ paths:
       responses:
         "200":
           description: Contact search result.
+          headers:
+            Idempotency-Key:
+              description: The supplied or server-generated idempotency key.
+              schema:
+                type: string
           content:
             application/json:
               schema:

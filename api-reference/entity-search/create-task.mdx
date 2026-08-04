@@ -6,7 +6,7 @@ openapi: "POST /v1/entity-search/create_task"
 
 Creates an Entity Search task and returns a `leads_search_id` for later [Status](/api-reference/entity-search/status) and [Fetch](/api-reference/entity-search/fetch) calls.
 
-`Idempotency-Key` is required and must contain 1 to 128 characters. The complete JSON body must be at most 1 MiB; unknown fields and multiple JSON objects are rejected.
+`Idempotency-Key` is optional and can contain up to 128 characters. When omitted, lev8 generates a key and returns it in the response Header. The complete JSON body must be at most 1 MiB; unknown fields and multiple JSON objects are rejected.
 
 ## Example
 
@@ -15,7 +15,7 @@ curl "https://app.lev8.com/v1/entity-search/create_task" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "x-api-key: $LEV8_API_KEY" \
-  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  --header "Idempotency-Key: $(uuidgen)" \
   --data '{
     "entity_type": "company",
     "objective": "AI startups that raised Series A in 2024",
@@ -38,8 +38,8 @@ curl "https://app.lev8.com/v1/entity-search/create_task" \
 }
 ```
 
-The response includes `X-Request-Id` and `Cache-Control: no-store`. Store the request ID, task ID, and idempotency key with your local job.
+The response includes `Idempotency-Key`, `X-Request-Id`, and `Cache-Control: no-store`. Store both Headers and the task ID with your local job.
 
-Repeating the same body with the same API key and idempotency key returns the existing task without reserving credits again. Reusing the key with different input returns `409 idempotency_error`; replaying while task creation has no stable handle returns `409 request_in_progress`.
+Repeating the same body with the same API key and idempotency key returns the existing task without reserving credits again. Reusing the key with different input returns `409 idempotency_error`; replaying while task creation has no stable handle returns `409 request_in_progress`; replaying after its recovery window returns `409 request_expired`.
 
 See [Entity Search](/api-reference/entity-search) for entity types, field limits, deduplication, enrichment, and web search guidance.

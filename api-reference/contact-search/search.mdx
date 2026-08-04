@@ -6,6 +6,8 @@ openapi: "POST /v1/contact-search"
 
 Searches for one email address or phone number and returns a JSON response.
 
+`Idempotency-Key` is optional. When omitted, lev8 generates one and returns the final value in the response Header.
+
 ## Example
 
 ```bash
@@ -13,7 +15,7 @@ curl "https://app.lev8.com/v1/contact-search" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "x-api-key: $LEV8_API_KEY" \
-  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  --header "Idempotency-Key: $(uuidgen)" \
   --data '{
     "contact_type": "email",
     "objective": "Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997"
