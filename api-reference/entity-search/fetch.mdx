@@ -1,24 +1,10 @@
 ---
 title: "Fetch results"
 description: "Read Entity Search results by position."
-api: "GET /v1/entity-search/fetch"
+openapi: "GET /v1/entity-search/fetch"
 ---
 
 Fetches available entities from a search task. The client tracks `pts` locally and advances it by the returned `count`.
-
-## Query parameters
-
-<ParamField query="leads_search_id" type="string" required default="leads_search_01JABCDEF123456789">
-  The task ID returned by `create_task`.
-</ParamField>
-
-<ParamField query="pts" type="integer" default="0">
-  Zero-based result start position.
-</ParamField>
-
-<ParamField query="num" type="integer" default="5">
-  Maximum number of results to return in this call.
-</ParamField>
 
 ## Example
 

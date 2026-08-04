@@ -44,5 +44,5 @@ The balance response is deliberately account-level: it does not expose paid, mon
 - Contact Search pricing, enrichment surcharges, and final production Entity Search rates are provided separately for each rollout rather than published here.
 
 <Note>
-  If an Entity Search task fails after partial results are produced, retain `X-Request-Id` and `leads_search_id`. Do not automatically start a second billable task with a new idempotency key.
+  If an Entity Search task fails after partial results are produced, retain `X-Request-Id` and `leads_search_id`. Do not automatically start a second billable task before resolving the original state.
 </Note>

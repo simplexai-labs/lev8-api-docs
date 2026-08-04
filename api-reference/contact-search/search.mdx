@@ -1,34 +1,10 @@
 ---
 title: "Search contact"
 description: "Find an email address or phone number for one contact."
-api: "POST /v1/contact-search"
+openapi: "POST /v1/contact-search"
 ---
 
 Searches for one email address or phone number and returns a JSON response.
-
-## Headers
-
-<ParamField header="Content-Type" type="string" required default="application/json">
-  Use `application/json`.
-</ParamField>
-
-<ParamField header="x-api-key" type="string" required default="lev8_live_...">
-  Your active lev8 External API key with Contact Search access.
-</ParamField>
-
-<ParamField header="Idempotency-Key" type="string" default="550e8400-e29b-41d4-a716-446655440000">
-  A unique value up to 128 characters for one logical lookup request.
-</ParamField>
-
-## Request body
-
-<ParamField body="contact_type" type="string" required default="email">
-  Contact type to find: `email` or `phone`.
-</ParamField>
-
-<ParamField body="objective" type="string" required default="Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997">
-  Natural-language description of whose email or phone number to find. Include identity signals such as platform URLs or handles when available.
-</ParamField>
 
 ## Example
 

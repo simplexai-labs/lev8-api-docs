@@ -18,7 +18,6 @@ The task may produce results while it is still running. A client is done reading
 | `Content-Type: application/json` | For `create_task` | Other media types can be rejected. |
 | `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
 | `x-api-key` | Yes | Your active lev8 External API key. |
-| `Idempotency-Key` | Recommended for `create_task` | A unique value up to 128 characters for one logical task creation request. |
 
 ## Create task
 
@@ -297,7 +296,6 @@ async function lev8(path, options = {}) {
 
 const task = await lev8("/v1/entity-search/create_task", {
   method: "POST",
-  headers: { "Idempotency-Key": crypto.randomUUID() },
   body: JSON.stringify({
     entity_type: "company",
     objective: "AI startups that raised Series A in 2024",
@@ -342,4 +340,4 @@ Entity Search uses the standard [error envelope](/api-reference/errors).
 | `422` | Validation failed, such as unsupported `entity_type`, invalid `limit`, invalid `pts` or `num`, or invalid `enrich_fields`. |
 | `500` | Server error. |
 
-Authentication, billing, idempotency, concurrency, and service availability errors are documented in [Errors](/api-reference/errors).
+Authentication, billing, concurrency, and service availability errors are documented in [Errors](/api-reference/errors).
