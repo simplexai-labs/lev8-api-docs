@@ -28,7 +28,7 @@ The complete request body must be at most 1 MiB. Unknown fields, malformed JSON,
 <CodeGroup>
 
 ```bash cURL
-curl "$LEV8_API_BASE_URL/v1/contact-search" \
+curl "https://app.lev8.com/v1/contact-search" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "Accept: application/json" \
@@ -41,7 +41,7 @@ curl "$LEV8_API_BASE_URL/v1/contact-search" \
 ```
 
 ```javascript Node.js
-const response = await fetch(`${process.env.LEV8_API_BASE_URL}/v1/contact-search`, {
+const response = await fetch("https://app.lev8.com/v1/contact-search", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -55,36 +55,69 @@ const response = await fetch(`${process.env.LEV8_API_BASE_URL}/v1/contact-search
   }),
 });
 
+const requestId = response.headers.get("x-request-id");
 if (!response.ok) {
-  throw new Error(`lev8 request failed with HTTP ${response.status}`);
+  const apiError = await response.json().catch(() => null);
+  throw new Error(
+    apiError?.error?.message ??
+      `lev8 request failed with HTTP ${response.status} (request_id=${requestId ?? "unknown"})`,
+  );
 }
 
 const result = await response.json();
-console.log(result.result.content);
+console.log({ requestId, content: result.result.content, reference: result.result.reference });
 ```
 
 ```python Python
+import asyncio
+import json
 import os
 import uuid
-import requests
+import httpx
 
-response = requests.post(
-    f"{os.environ['LEV8_API_BASE_URL']}/v1/contact-search",
-    headers={
+
+API_URL = "https://app.lev8.com/v1/contact-search"
+API_KEY = os.environ["LEV8_API_KEY"]
+
+
+async def contact_search() -> None:
+    headers = {
         "Content-Type": "application/json",
         "Accept": "application/json",
-        "x-api-key": os.environ["LEV8_API_KEY"],
+        "x-api-key": API_KEY,
         "Idempotency-Key": str(uuid.uuid4()),
-    },
-    json={
+    }
+    payload = {
         "contact_type": "email",
         "objective": "Find the work email for the VP of Sales at Acme",
-    },
-    timeout=45,
-)
-response.raise_for_status()
+    }
 
-print(response.json()["result"]["content"])
+    async with httpx.AsyncClient(timeout=60) as client:
+        response = await client.post(API_URL, headers=headers, json=payload)
+        request_id = response.headers.get("x-request-id")
+        if response.is_error:
+            try:
+                message = response.json().get("error", {}).get("message")
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                message = None
+            raise RuntimeError(
+                message
+                or f"lev8 request failed with HTTP {response.status_code} "
+                f"(request_id={request_id or 'unknown'})"
+            )
+
+        result = response.json()
+        print(
+            {
+                "request_id": request_id,
+                "content": result.get("result", {}).get("content"),
+                "reference": result.get("result", {}).get("reference"),
+            }
+        )
+
+
+if __name__ == "__main__":
+    asyncio.run(contact_search())
 ```
 
 </CodeGroup>

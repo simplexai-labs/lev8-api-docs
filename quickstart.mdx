@@ -7,8 +7,8 @@ description: "Make your first Entity Search request and consume the SSE response
 
 You need:
 
-- An API base URL assigned by lev8.
-- An active API key with Entity Search access.
+- The API base URL: `https://app.lev8.com`.
+- An active API key with Entity Search access, created from [API Tokens](https://app.lev8.com/api-tokens).
 - Enough credits to reserve the maximum cost of the request.
 - A server-side HTTP client that can consume Server-Sent Events (SSE).
 
@@ -17,7 +17,6 @@ You need:
     Keep API keys out of browser code, mobile apps, source control, and logs.
 
     ```bash
-    export LEV8_API_BASE_URL="https://your-assigned-api-host"
     export LEV8_API_KEY="lev8_live_..."
     ```
   </Step>
@@ -26,7 +25,7 @@ You need:
     Confirm that the API key's billing account has credits available for a new request.
 
     ```bash
-    curl "$LEV8_API_BASE_URL/v1/credit/balance" \
+    curl "https://app.lev8.com/v1/credit/balance" \
       --header "x-api-key: $LEV8_API_KEY"
     ```
 
@@ -37,7 +36,7 @@ You need:
     Use `--no-buffer` so curl prints each SSE event as it arrives. Supply a unique `Idempotency-Key` for the logical request.
 
     ```bash
-    curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
+    curl --no-buffer "https://app.lev8.com/v1/entity-search" \
       --request POST \
       --header "Content-Type: application/json" \
       --header "Accept: text/event-stream" \

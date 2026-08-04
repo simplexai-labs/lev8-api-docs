@@ -43,10 +43,14 @@ The complete request body must be at most 1 MiB. Unknown fields, malformed JSON,
 
 ## Example request
 
+<Note>
+  The Node.js example requires Node.js 18 or later. For Python, install the async HTTP client with `python -m pip install httpx`.
+</Note>
+
 <CodeGroup>
 
 ```bash cURL
-curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
+curl --no-buffer "https://app.lev8.com/v1/entity-search" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "Accept: text/event-stream" \
@@ -61,7 +65,7 @@ curl --no-buffer "$LEV8_API_BASE_URL/v1/entity-search" \
 ```
 
 ```javascript Node.js
-const response = await fetch(`${process.env.LEV8_API_BASE_URL}/v1/entity-search`, {
+const response = await fetch("https://app.lev8.com/v1/entity-search", {
   method: "POST",
   headers: {
     "Content-Type": "application/json",
@@ -77,42 +81,182 @@ const response = await fetch(`${process.env.LEV8_API_BASE_URL}/v1/entity-search`
   }),
 });
 
+const requestId = response.headers.get("x-request-id");
 if (!response.ok) {
-  throw new Error(`lev8 request failed with HTTP ${response.status}`);
+  const apiError = await response.json().catch(() => null);
+  throw new Error(
+    apiError?.error?.message ??
+      `lev8 request failed with HTTP ${response.status} (request_id=${requestId ?? "unknown"})`,
+  );
+}
+
+if (!response.headers.get("content-type")?.includes("text/event-stream")) {
+  throw new Error("lev8 returned an unexpected content type");
+}
+if (!response.body) {
+  throw new Error("lev8 returned an empty response body");
+}
+
+const decoder = new TextDecoder();
+const entities = [];
+const seenBatchIndexes = new Set();
+let buffer = "";
+let doneEvent = null;
+let sawDone = false;
+
+function consumeFrame(frame) {
+  const payload = frame
+    .split(/\r?\n/)
+    .filter((line) => line.startsWith("data:"))
+    .map((line) => line.slice(5).trimStart())
+    .join("\n");
+
+  if (!payload) return;
+  if (payload === "[DONE]") {
+    sawDone = true;
+    return;
+  }
+
+  const event = JSON.parse(payload);
+  if (event.object === "entity_search_batch") {
+    if (!seenBatchIndexes.has(event.batch_index)) {
+      seenBatchIndexes.add(event.batch_index);
+      entities.push(...event.entities);
+      console.log(`received ${event.count} entities; total=${entities.length}`);
+    }
+  } else if (event.object === "entity_search_done") {
+    doneEvent = event;
+  } else if (event.object === "error") {
+    throw new Error(
+      `${event.error?.message ?? "lev8 stream failed"} (request_id=${event.error?.request_id ?? requestId ?? "unknown"})`,
+    );
+  } else {
+    throw new Error(`unexpected SSE object: ${event.object}`);
+  }
 }
 
 for await (const chunk of response.body) {
-  process.stdout.write(Buffer.from(chunk).toString("utf8"));
+  buffer += decoder.decode(chunk, { stream: true });
+  while (true) {
+    const boundary = buffer.match(/\r?\n\r?\n/);
+    if (!boundary || boundary.index === undefined) break;
+    consumeFrame(buffer.slice(0, boundary.index));
+    buffer = buffer.slice(boundary.index + boundary[0].length);
+  }
 }
+
+buffer += decoder.decode();
+if (buffer.trim()) consumeFrame(buffer);
+if (!sawDone || !doneEvent) {
+  throw new Error(`lev8 stream ended before completion (request_id=${requestId ?? "unknown"})`);
+}
+
+console.log({
+  requestId,
+  leadsSearchId: doneEvent.leads_search_id,
+  stopReason: doneEvent.stop_reason,
+  entityCount: entities.length,
+});
 ```
 
 ```python Python
+import asyncio
+import json
 import os
 import uuid
-import requests
+import httpx
 
-response = requests.post(
-    f"{os.environ['LEV8_API_BASE_URL']}/v1/entity-search",
-    headers={
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream",
-        "x-api-key": os.environ["LEV8_API_KEY"],
-        "Idempotency-Key": str(uuid.uuid4()),
-    },
-    json={
+
+API_URL = "https://app.lev8.com/v1/entity-search"
+API_KEY = os.environ["LEV8_API_KEY"]
+
+
+async def entity_search_stream() -> None:
+    payload = {
         "entity_type": "company",
         "objective": "Developer tooling companies in Europe with recent seed funding",
         "limit": 25,
         "enrich_fields": ["website", "funding"],
-    },
-    stream=True,
-    timeout=660,
-)
-response.raise_for_status()
+    }
+    headers = {
+        "Content-Type": "application/json",
+        "Accept": "text/event-stream",
+        "x-api-key": API_KEY,
+        "Idempotency-Key": str(uuid.uuid4()),
+    }
+    timeout = httpx.Timeout(connect=10, read=660, write=30, pool=10)
+    entities = []
+    seen_batch_indexes = set()
+    done_event = None
+    saw_done = False
+    request_id = None
 
-for line in response.iter_lines(decode_unicode=True):
-    if line:
-        print(line)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        async with client.stream("POST", API_URL, headers=headers, json=payload) as response:
+            request_id = response.headers.get("x-request-id")
+            if response.is_error:
+                await response.aread()
+                try:
+                    message = response.json().get("error", {}).get("message")
+                except (json.JSONDecodeError, UnicodeDecodeError):
+                    message = None
+                raise RuntimeError(
+                    message
+                    or f"lev8 request failed with HTTP {response.status_code} "
+                    f"(request_id={request_id or 'unknown'})"
+                )
+
+            content_type = response.headers.get("content-type", "").split(";", 1)[0]
+            if content_type != "text/event-stream":
+                raise RuntimeError(f"unexpected content type: {content_type}")
+
+            async for line in response.aiter_lines():
+                if not line or not line.startswith("data:"):
+                    continue
+
+                data_text = line.removeprefix("data:").strip()
+                if data_text == "[DONE]":
+                    saw_done = True
+                    break
+
+                event = json.loads(data_text)
+                if event.get("object") == "entity_search_batch":
+                    batch_index = event["batch_index"]
+                    if batch_index not in seen_batch_indexes:
+                        seen_batch_indexes.add(batch_index)
+                        entities.extend(event.get("entities", []))
+                        print(
+                            f"received {event.get('count', 0)} entities; "
+                            f"total={len(entities)}"
+                        )
+                elif event.get("object") == "entity_search_done":
+                    done_event = event
+                elif event.get("object") == "error":
+                    error = event.get("error", {})
+                    raise RuntimeError(
+                        f"{error.get('message', 'lev8 stream failed')} "
+                        f"(request_id={error.get('request_id') or request_id or 'unknown'})"
+                    )
+                else:
+                    raise RuntimeError(f"unexpected SSE object: {event.get('object')}")
+
+    if not saw_done or done_event is None:
+        raise RuntimeError(
+            f"lev8 stream ended before completion (request_id={request_id or 'unknown'})"
+        )
+
+    print(
+        {
+            "request_id": request_id,
+            "leads_search_id": done_event.get("leads_search_id"),
+            "stop_reason": done_event.get("stop_reason"),
+            "entity_count": len(entities),
+        }
+    )
+
+
+if __name__ == "__main__":
+    asyncio.run(entity_search_stream())
 ```
 
 </CodeGroup>
