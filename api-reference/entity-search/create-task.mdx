@@ -8,23 +8,47 @@ Creates an Entity Search task and returns a `leads_search_id` for later `status`
 
 ## Headers
 
-| Header | Required | Description |
-| --- | --- | --- |
-| `Content-Type: application/json` | Yes | Request body must be JSON. |
-| `x-api-key` | Yes | Your active lev8 External API key. |
-| `Idempotency-Key` | Recommended | A unique value up to 128 characters for one logical task creation request. |
+<ParamField header="Content-Type" type="string" required>
+  Use `application/json`.
+</ParamField>
+
+<ParamField header="x-api-key" type="string" required>
+  Your active lev8 External API key.
+</ParamField>
+
+<ParamField header="Idempotency-Key" type="string">
+  A unique value up to 128 characters for one logical task creation request.
+</ParamField>
 
 ## Request body
 
-| Field | Type | Required | Default | Description |
-| --- | --- | --- | --- | --- |
-| `entity_type` | string enum | Yes | - | `person`, `company`, `twitter_creator`, `youtube_creator`, `tiktok_creator`, `instagram_creator`, or `shopify_store`. |
-| `objective` | string | Yes | - | Natural-language search target. |
-| `limit` | integer | No | `20` | Maximum number of deduplicated entities to produce. Recommended range is `5` to `500`. |
-| `enable_web_search` | boolean | No | `false` | Adds open web search mode on top of database search. Usually increases latency and cost. |
-| `enrich_fields` | string[] | No | `null` | Extra fields to return under `entities[].enrich_fields`. |
-| `dedup_lev8_leads` | string[] | No | `[]` | Previous `leads_search_id` values whose results should be excluded. |
-| `dedup_custom_leads` | string[] | No | `[]` | Existing lead names to exclude from this task. |
+<ParamField body="entity_type" type="string" required>
+  Entity type to search: `person`, `company`, `twitter_creator`, `youtube_creator`, `tiktok_creator`, `instagram_creator`, or `shopify_store`.
+</ParamField>
+
+<ParamField body="objective" type="string" required>
+  Natural-language search target.
+</ParamField>
+
+<ParamField body="limit" type="integer" default="20">
+  Maximum number of deduplicated entities to produce. Recommended range is `5` to `500`.
+</ParamField>
+
+<ParamField body="enable_web_search" type="boolean" default="false">
+  Adds open web search mode on top of database search. Usually increases latency and cost.
+</ParamField>
+
+<ParamField body="enrich_fields" type="string[]" default="null">
+  Extra fields to return under `entities[].enrich_fields`.
+</ParamField>
+
+<ParamField body="dedup_lev8_leads" type="string[]" default="[]">
+  Previous `leads_search_id` values whose results should be excluded.
+</ParamField>
+
+<ParamField body="dedup_custom_leads" type="string[]" default="[]">
+  Existing lead names to exclude from this task.
+</ParamField>
 
 ## Example
 
