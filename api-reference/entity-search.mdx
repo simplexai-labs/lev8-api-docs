@@ -62,6 +62,9 @@ curl -N -X POST "https://app.lev8.com/v1/entity-search" \
 ```
 
 ```javascript Node.js
+import { createInterface } from "node:readline";
+import { Readable } from "node:stream";
+
 const response = await fetch("https://app.lev8.com/v1/entity-search", {
   method: "POST",
   headers: {
@@ -78,47 +81,30 @@ const response = await fetch("https://app.lev8.com/v1/entity-search", {
 
 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-const decoder = new TextDecoder();
-let buffer = "";
-let sawDoneEvent = false;
-let sawDoneSentinel = false;
+const lines = createInterface({
+  input: Readable.fromWeb(response.body),
+  crlfDelay: Infinity,
+});
 
-function handleData(payload) {
-  if (payload === "[DONE]") {
-    sawDoneSentinel = true;
-    console.log("stream closed");
-    return;
+for await (const line of lines) {
+  if (!line.startsWith("data:")) {
+    continue;
   }
 
-  const event = JSON.parse(payload);
+  const data = line.slice(5).trim();
+  if (data === "[DONE]") {
+    console.log("stream closed");
+    break;
+  }
+
+  const event = JSON.parse(data);
   if (event.object === "entity_search_batch") {
     console.log(`batch ${event.batch_index}: ${event.count} entities`);
   } else if (event.object === "entity_search_done") {
-    sawDoneEvent = true;
     console.log(`done: ${event.cum_count} entities (${event.stop_reason})`);
   } else if (event.object === "error") {
     throw new Error(event.error?.message ?? "lev8 stream failed");
   }
-}
-
-for await (const chunk of response.body) {
-  buffer += decoder.decode(chunk, { stream: true });
-  const lines = buffer.split(/\r?\n/);
-  buffer = lines.pop() ?? "";
-
-  for (const line of lines) {
-    if (line.startsWith("data:")) {
-      handleData(line.slice(5).trim());
-    }
-  }
-}
-
-buffer += decoder.decode();
-if (buffer.startsWith("data:")) {
-  handleData(buffer.slice(5).trim());
-}
-if (!sawDoneEvent || !sawDoneSentinel) {
-  throw new Error("stream ended before completion");
 }
 ```
 
@@ -147,8 +133,6 @@ async def entity_search_stream() -> None:
     async with httpx.AsyncClient(timeout=600) as client:
         async with client.stream("POST", API_URL, headers=headers, json=payload) as response:
             response.raise_for_status()
-            saw_done_event = False
-            saw_done_sentinel = False
 
             async for line in response.aiter_lines():
                 if not line.startswith("data:"):
@@ -156,7 +140,6 @@ async def entity_search_stream() -> None:
 
                 data = line.removeprefix("data:").strip()
                 if data == "[DONE]":
-                    saw_done_sentinel = True
                     print("stream closed")
                     break
 
@@ -164,13 +147,9 @@ async def entity_search_stream() -> None:
                 if event.get("object") == "entity_search_batch":
                     print(f"batch {event['batch_index']}: {event['count']} entities")
                 elif event.get("object") == "entity_search_done":
-                    saw_done_event = True
                     print(f"done: {event['cum_count']} entities ({event['stop_reason']})")
                 elif event.get("object") == "error":
                     raise RuntimeError(event["error"]["message"])
-
-            if not saw_done_event or not saw_done_sentinel:
-                raise RuntimeError("stream ended before completion")
 
 
 if __name__ == "__main__":
