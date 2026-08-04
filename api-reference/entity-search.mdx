@@ -21,7 +21,7 @@ description: "Search for people, companies, shopify stores, and creators with a 
 | `entity_type` | string | Yes | One of the supported values below. |
 | `objective` | string | Yes | Natural-language search objective, 1 to 4,000 UTF-8 bytes after trimming. |
 | `limit` | integer | No | Number of results requested, `1` to `500`; defaults to `10`. |
-| `enable_web_search` | boolean | No | Enables open-web search in addition to database search; defaults to `false`. |
+| `enable_web_search` | boolean | No | Adds web-wide search on top of database search; defaults to `false`. |
 | `enrich_fields` | string[] | No | Additional fields to request, up to 20 items. Availability and cost depend on your access configuration. |
 | `dedup_lev8_leads` | string[] | No | Existing lev8 lead identifiers to exclude, up to 100 items. |
 | `dedup_custom_leads` | string[] | No | Your own lead identifiers to exclude, up to 1,000 items. |
@@ -31,13 +31,13 @@ The complete request body must be at most 1 MiB. Unknown fields, malformed JSON,
 ### Enable web search
 
 <Tip>
-  Set `enable_web_search` to `true` when freshness or non-LinkedIn discovery matters:
+  Entity Search uses database search by default. Set `enable_web_search` to `true` to keep database search and also turn on web-wide search mode when freshness or broader discovery matters:
 
   - Creator searches on X/Twitter, YouTube, TikTok, or Instagram.
   - Shopify store searches by product, brand style, vertical category, or recent trend.
   - Time-sensitive searches for entities that appeared, raised funding, launched, started hiring, or grew quickly in the last 30 days.
 
-  Keep it `false` for structured LinkedIn person or company searches based on stable fields such as industry, location, title, or company size. Leaving it off prioritizes database search, which usually lowers latency and cost.
+  Keep it `false` for structured person or company searches. Turning it on usually increases latency and cost.
 </Tip>
 
 ### Deduplicate results
