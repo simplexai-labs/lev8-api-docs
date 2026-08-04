@@ -19,9 +19,15 @@ description: "Find an email address or phone number for a contact using a natura
 | Field | Type | Required | Constraints |
 | --- | --- | --- | --- |
 | `contact_type` | string | Yes | `email` or `phone`. |
-| `objective` | string | Yes | Natural-language description of the person or contact to find, 1 to 4,000 Unicode characters after trimming. |
+| `objective` | string | Yes | Natural-language description of the owner and the email or phone number to find, 1 to 4,000 Unicode characters after trimming. |
 
 The complete request body must be at most 1 MiB. Unknown fields, malformed JSON, and multiple JSON objects are rejected.
+
+### Write the objective
+
+<Tip>
+  Include identity signals that help lev8 identify the contact owner. For example, add `linkedin_url`, a company or personal website, X/Twitter, YouTube, TikTok, Instagram, or GitHub links or handles. More specific owner signals improve match accuracy.
+</Tip>
 
 ## Example request
 
@@ -36,7 +42,7 @@ curl "https://app.lev8.com/v1/contact-search" \
   --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
   --data '{
     "contact_type": "email",
-    "objective": "Find the work email for the VP of Sales at Acme"
+    "objective": "Find the work email for Maya Chen, VP of Sales at Acme. Owner signals: company website=https://www.acme.com"
   }'
 ```
 
@@ -51,7 +57,8 @@ const response = await fetch("https://app.lev8.com/v1/contact-search", {
   },
   body: JSON.stringify({
     contact_type: "email",
-    objective: "Find the work email for the VP of Sales at Acme",
+    objective:
+      "Find the work email for Maya Chen, VP of Sales at Acme. Owner signals: company website=https://www.acme.com",
   }),
 });
 
@@ -89,7 +96,7 @@ async def contact_search() -> None:
     }
     payload = {
         "contact_type": "email",
-        "objective": "Find the work email for the VP of Sales at Acme",
+        "objective": "Find the work email for Maya Chen, VP of Sales at Acme. Owner signals: company website=https://www.acme.com",
     }
 
     async with httpx.AsyncClient(timeout=60) as client:
@@ -131,7 +138,7 @@ On success, the response status is `200`. `X-Request-Id` contains the lev8 reque
   "object": "contact_search_result",
   "request": {
     "contact_type": "email",
-    "objective": "Find the work email for the VP of Sales at Acme"
+    "objective": "Find the work email for Maya Chen, VP of Sales at Acme. Owner signals: company website=https://www.acme.com"
   },
   "result": {
     "content": "alex@example.com",
