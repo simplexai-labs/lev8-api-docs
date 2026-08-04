@@ -24,7 +24,7 @@ Create a key from [**API Tokens**](https://app.lev8.com/api-tokens) in your lev8
 - Existing keys cannot be recovered from the dashboard; create a replacement and rotate clients instead.
 - API scopes and expiration are currently managed by lev8 and cannot be customized during key creation.
 - Any active key can query its own billing account's [credit balance](/api-reference/credit-balance); [Entity Search](/api-reference/entity-search) and [Contact Search](/api-reference/contact-search) each depend on the key's endpoint scope.
-- The same key can authenticate the local [lev8 MCP server](/mcp); keep it in the MCP client's process environment instead of a tool argument.
+- The same key can authenticate the local [lev8 MCP server](/mcp-reference); keep it in the MCP client's process environment instead of a tool argument.
 - Multiple keys for the same user share the same user-level concurrency allowance.
 
 ## Authentication errors
