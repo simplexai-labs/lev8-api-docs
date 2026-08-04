@@ -4,15 +4,23 @@
   "name": "lev8 API",
   "description": "Search for entities and contact details from your application.",
   "api": {
+    "openapi": [
+      "openapi.yaml"
+    ],
     "mdx": {
       "server": "https://app.lev8.com"
     },
+    "playground": {
+      "display": "interactive"
+    },
     "examples": {
       "languages": [
-        "bash",
-        "node",
+        "curl",
+        "javascript",
         "python"
-      ]
+      ],
+      "defaults": "all",
+      "prefill": true
     }
   },
   "seo": {
@@ -73,7 +81,6 @@
         "pages": [
           "api-reference/task-results",
           "api-reference/errors",
-          "guides/idempotency",
           "guides/billing"
         ]
       }

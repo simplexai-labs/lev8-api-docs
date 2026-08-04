@@ -28,7 +28,6 @@ HTTP errors use a JSON envelope:
 | `402` | The account cannot reserve the maximum request cost. |
 | `403` | API key is revoked, expired, or lacks endpoint access. |
 | `404` | `leads_search_id` does not exist or has expired. |
-| `409` | The same idempotency key was reused for an admitted request. |
 | `416` | `pts` is outside the currently readable range. |
 | `422` | Content type, JSON structure, field value, or request size is invalid. |
 | `429` | The user-level or service-level concurrent request limit was reached. |
@@ -37,7 +36,7 @@ HTTP errors use a JSON envelope:
 
 The API intentionally redacts upstream response bodies, internal request IDs, and implementation details.
 
-Not every status applies to every endpoint. Credit balance can return `401`, `403`, `500`, or `503`; it does not reserve credits and therefore does not return search billing or idempotency errors.
+Not every status applies to every endpoint. Credit balance can return `401`, `403`, `500`, or `503`; it does not reserve credits and therefore does not return search billing errors.
 
 ## Task-level failures
 

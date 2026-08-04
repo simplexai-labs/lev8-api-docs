@@ -14,7 +14,6 @@ curl "https://app.lev8.com/v1/entity-search/create_task" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "x-api-key: $LEV8_API_KEY" \
-  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
   --data '{
     "entity_type": "company",
     "objective": "AI infrastructure startups in the United States founded since 2023",
@@ -55,7 +54,6 @@ The response includes a `leads_search_id`. Use it with `GET /v1/entity-search/st
 - `POST /v1/contact-search` returns one email or phone lookup as JSON after billing settles.
 - `GET /v1/credit/balance` reports the credits currently available for new requests.
 - Entity Search reserves credits up to the requested `limit` and settles against the number of unique returned entities. Contact Search reserves one lookup at the configured contact-type price.
-- Idempotency prevents duplicate execution and duplicate billing; the current API does not replay a previous response.
 
 <Warning>
   Credit history and bucket-detail endpoints, response replay, and client-controlled API scopes are not part of the current public API.

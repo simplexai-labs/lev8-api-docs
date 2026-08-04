@@ -12,7 +12,6 @@ description: "Find an email address or phone number for a contact using a natura
 | `Content-Type: application/json` | Yes | Other media types return `422`. |
 | `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
 | `x-api-key` | Yes | An active lev8 External API key with Contact Search access. |
-| `Idempotency-Key` | Recommended | A unique value up to 128 characters for one logical request. |
 
 ## Request body
 
@@ -39,7 +38,6 @@ curl "https://app.lev8.com/v1/contact-search" \
   --header "Content-Type: application/json" \
   --header "Accept: application/json" \
   --header "x-api-key: $LEV8_API_KEY" \
-  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
   --data '{
     "contact_type": "email",
     "objective": "Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997"
@@ -53,7 +51,6 @@ const response = await fetch("https://app.lev8.com/v1/contact-search", {
     "Content-Type": "application/json",
     Accept: "application/json",
     "x-api-key": process.env.LEV8_API_KEY,
-    "Idempotency-Key": crypto.randomUUID(),
   },
   body: JSON.stringify({
     contact_type: "email",
@@ -79,7 +76,6 @@ console.log({ requestId, content: result.result.content, reference: result.resul
 import asyncio
 import json
 import os
-import uuid
 import httpx
 
 
@@ -92,7 +88,6 @@ async def contact_search() -> None:
         "Content-Type": "application/json",
         "Accept": "application/json",
         "x-api-key": API_KEY,
-        "Idempotency-Key": str(uuid.uuid4()),
     }
     payload = {
         "contact_type": "email",
@@ -172,7 +167,6 @@ The success response is written only after settlement succeeds. An upstream or r
 | `401` | `authentication_error` | The API key is missing, malformed, or unknown. |
 | `402` | `insufficient_credits` | The account cannot reserve the lookup cost. |
 | `403` | `authentication_error` | The API key is revoked, expired, or lacks Contact Search access. |
-| `409` | `idempotency_error` or `request_already_exists` | The idempotency key conflicts with or duplicates an admitted request. |
 | `422` | `invalid_request_error` | The content type, JSON structure, field value, or request size is invalid. |
 | `429` | `concurrency_limit` | The user-level or service-level concurrent request limit was reached. |
 | `500` | `internal_error` | An internal dependency, upstream request, protocol check, or settlement failed. |
