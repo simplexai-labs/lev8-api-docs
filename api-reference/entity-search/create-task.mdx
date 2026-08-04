@@ -8,25 +8,25 @@ Creates an Entity Search task and returns a `leads_search_id` for later `status`
 
 ## Headers
 
-<ParamField header="Content-Type" type="string" required>
+<ParamField header="Content-Type" type="string" required default="application/json">
   Use `application/json`.
 </ParamField>
 
-<ParamField header="x-api-key" type="string" required>
+<ParamField header="x-api-key" type="string" required default="lev8_live_...">
   Your active lev8 External API key.
 </ParamField>
 
-<ParamField header="Idempotency-Key" type="string">
+<ParamField header="Idempotency-Key" type="string" default="550e8400-e29b-41d4-a716-446655440000">
   A unique value up to 128 characters for one logical task creation request.
 </ParamField>
 
 ## Request body
 
-<ParamField body="entity_type" type="string" required>
+<ParamField body="entity_type" type="string" required default="company">
   Entity type to search: `person`, `company`, `twitter_creator`, `youtube_creator`, `tiktok_creator`, `instagram_creator`, or `shopify_store`.
 </ParamField>
 
-<ParamField body="objective" type="string" required>
+<ParamField body="objective" type="string" required default="AI startups that raised Series A in 2024">
   Natural-language search target.
 </ParamField>
 
@@ -38,7 +38,7 @@ Creates an Entity Search task and returns a `leads_search_id` for later `status`
   Adds open web search mode on top of database search. Usually increases latency and cost.
 </ParamField>
 
-<ParamField body="enrich_fields" type="string[]" default="null">
+<ParamField body="enrich_fields" type="string[]" default='["funding stage", "headcount"]'>
   Extra fields to return under `entities[].enrich_fields`.
 </ParamField>
 
