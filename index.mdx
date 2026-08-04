@@ -1,13 +1,9 @@
 ---
 title: "lev8 API"
-description: "Search the live web for entities and contact details from your application."
+description: "Search for entities and contact details from your application."
 ---
 
-The lev8 API turns a natural-language objective into matching entities or a requested contact detail. It is designed for server-side products that need live-web people and business intelligence without building a search pipeline from scratch.
-
-<Note>
-  The API base URL is `https://app.lev8.com`. External API access is being rolled out in stages, and your lev8 contact will enable the entity and contact types available to your workspace.
-</Note>
+The lev8 API turns a natural-language objective into matching entities or a requested contact detail. It is designed for server-side products that need people and business intelligence without building a search pipeline from scratch.
 
 ## Start with Entity Search
 
@@ -51,6 +47,7 @@ curl --no-buffer "https://app.lev8.com/v1/entity-search" \
 ## API behavior at a glance
 
 - Authentication uses an `x-api-key` header. API keys are separate from user sessions and internal service credentials.
+- Entity Search supports company, person, creator, and Shopify store entity types.
 - Every accepted search gets a lev8 request ID. Preserve it when contacting support.
 - Results stream as `entity_search_batch` events, followed by `entity_search_done` and `[DONE]`.
 - `POST /v1/contact-search` returns one email or phone lookup as JSON after billing settles.
