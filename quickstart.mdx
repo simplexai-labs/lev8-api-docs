@@ -32,13 +32,14 @@ You need:
   </Step>
 
   <Step title="Create a search task">
-    Submit the search objective and save the returned `leads_search_id`.
+    Generate one stable `Idempotency-Key` for the logical task, submit the search objective, and save the returned `leads_search_id`.
 
     ```bash
     curl "https://app.lev8.com/v1/entity-search/create_task" \
       --request POST \
       --header "Content-Type: application/json" \
       --header "x-api-key: $LEV8_API_KEY" \
+      --header "Idempotency-Key: $(uuidgen)" \
       --data '{
         "entity_type": "person",
         "objective": "VPs of Sales at Bay Area voice AI startups that launched in the last year",
@@ -67,12 +68,12 @@ You need:
       --header "x-api-key: $LEV8_API_KEY"
     ```
 
-    Continue fetching until the task status is `done` and your latest `pts + count` is greater than or equal to `ready_count`.
+    Continue fetching until the task status is `done` or `error` and your latest `pts + count` is greater than or equal to `ready_count`.
   </Step>
 </Steps>
 
 <Tip>
-  Save both `X-Request-Id` from HTTP responses and the `leads_search_id` from `create_task`. They identify different layers of the request and are useful when diagnosing a search.
+  A task with `status: error` can still have readable results. Fetch through its final `ready_count` before closing the task locally.
 </Tip>
 
 ## Next steps
@@ -89,5 +90,8 @@ You need:
   </Card>
   <Card title="Find contact details" icon="address-book" href="/api-reference/contact-search">
     Request an email address or phone number as a JSON response.
+  </Card>
+  <Card title="Connect MCP" icon="plug" href="/mcp">
+    Expose the same API as typed tools to an AI client.
   </Card>
 </CardGroup>

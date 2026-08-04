@@ -1,6 +1,6 @@
 ---
 title: "Errors"
-description: "Handle lev8 HTTP errors and task-level failures."
+description: "Handle lev8 authentication, request, task, billing, and retry errors."
 ---
 
 HTTP errors use a JSON envelope:
@@ -10,37 +10,38 @@ HTTP errors use a JSON envelope:
   "object": "error",
   "error": {
     "type": "invalid_request_error",
-    "message": "entity_type must be one of: person, company, twitter_creator, youtube_creator, tiktok_creator, instagram_creator, shopify_store",
-    "param": "entity_type",
-    "request_id": "req_01JABCDEF123456789"
+    "message": "limit must be between 1 and 500",
+    "param": "limit",
+    "request_id": "req_..."
   }
 }
 ```
 
-`param` and `request_id` are omitted when they are not available. A request ID may also appear in the `X-Request-Id` response header.
+`param` and `request_id` are omitted when unavailable. A request ID can also appear in the `X-Request-Id` response header.
 
 ## HTTP status codes
 
-| Status | Meaning |
-| --- | --- |
-| `400` | Malformed JSON or query parameters. |
-| `401` | API key is missing, malformed, or unknown. |
-| `402` | The account cannot reserve the maximum request cost. |
-| `403` | API key is revoked, expired, or lacks endpoint access. |
-| `404` | `leads_search_id` does not exist or has expired. |
-| `416` | `pts` is outside the currently readable range. |
-| `422` | Content type, JSON structure, field value, or request size is invalid. |
-| `429` | The user-level or service-level concurrent request limit was reached. |
-| `500` | An internal dependency, upstream operation, protocol check, or settlement failed. |
-| `503` | The endpoint or requested entity or contact type is not enabled or priced in this environment. |
+| Status | Error type | Meaning |
+| --- | --- | --- |
+| `401` | `authentication_error` | The API key is missing, malformed, or unknown. |
+| `402` | `insufficient_credits` | The account cannot reserve the maximum request cost. |
+| `403` | `authentication_error` | The key is revoked, expired, or lacks endpoint access. |
+| `404` | `not_found` | An Entity Search task does not exist or belongs to another API key. |
+| `409` | `idempotency_error` | The same idempotency key was reused with different input. |
+| `409` | `request_in_progress` | Entity task creation has not produced a stable task handle yet. |
+| `409` | `request_already_exists` | A Contact Search with this key exists but has no completed response to replay. |
+| `422` | `invalid_request_error` | A header, JSON body, query parameter, field value, or request size is invalid. |
+| `429` | `concurrency_limit` | The user-level or global concurrency limit was reached. |
+| `500` | `internal_error` | An internal dependency, upstream operation, protocol check, or settlement failed. |
+| `503` | `service_unavailable` | The endpoint or requested type is not enabled or priced. |
 
-The API intentionally redacts upstream response bodies, internal request IDs, and implementation details.
+The API redacts upstream response bodies and implementation details. A failed Entity Search status contains only `status.error: "internal error"`; already prepared results can still be fetched.
 
-Not every status applies to every endpoint. Credit balance can return `401`, `403`, `500`, or `503`; it does not reserve credits and therefore does not return search billing errors.
+Not every status applies to every endpoint. Credit balance does not reserve credits and therefore does not return search billing, task, or idempotency errors.
 
 ## Task-level failures
 
-An Entity Search task can fail after `create_task` succeeds. In that case, `status` returns HTTP `200` with `status.status` set to `error` and an `error` object in the response body.
+An Entity Search task can fail after `create_task` succeeds. In that case, Status returns HTTP `200` with the failure nested under `status`:
 
 ```json
 {
@@ -50,30 +51,25 @@ An Entity Search task can fail after `create_task` succeeds. In that case, `stat
     "status": "error",
     "verified_count": 12,
     "ready_count": 5,
-    "stop_reason": null
-  },
-  "error": {
-    "type": "internal_error",
-    "message": "internal error",
-    "request_id": "req_01JABCDEF123456789"
+    "error": "internal error"
   }
 }
 ```
 
-Treat task status `error` as a failed search, even though the status request itself succeeded.
-
-Contact Search returns errors before writing a success body. A successful JSON result is not returned until billing settlement succeeds.
+The task failed, but its five ready results remain available through Fetch.
 
 ## Retry guidance
 
 | Condition | Guidance |
 | --- | --- |
-| `400`, `401`, `402`, `403`, `422` | Fix the request, credential, or balance before retrying. |
-| `404` for `leads_search_id` | Check that the task ID was copied correctly and has not expired. |
-| `416` on `fetch` | Call `status`, read `ready_count`, and resume from a valid `pts`. |
-| `429` | Wait before starting a new request. The API currently does not return `Retry-After`. |
-| `500`, `503`, or task status `error` | Retry with backoff only after deciding the original task will not be recovered. Preserve IDs for support. |
+| `401`, `402`, `403`, `404`, `422` | Fix the credential, balance, task ID, or request before retrying. |
+| `429` | Wait before creating another task or Contact Search. The API does not currently return `Retry-After`. |
+| Lost Entity Search create response | Retry the same body with the same `Idempotency-Key`; do not create a new logical task. |
+| `409 request_in_progress` | Preserve the original key and request ID. Wait before retrying the same create request. |
+| Entity Status or Fetch `500` | Retry that read with backoff. Keep the original `leads_search_id`. |
+| Lost Contact Search response | Retry the same body with the same key. A completed response is replayed without another upstream call or charge. |
+| `500` during a paid POST | Do not switch to a new key automatically; the original request may still require recovery. |
 
 <Tip>
-  Log the HTTP status, error `type`, error `request_id`, `X-Request-Id`, and `leads_search_id`. Never log the API key or the full request if it contains sensitive search criteria.
+  Log the HTTP status, error `type`, `request_id`, `X-Request-Id`, and `leads_search_id`. Never log the API key or sensitive objective and result data.
 </Tip>

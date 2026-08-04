@@ -1,0 +1,90 @@
+---
+title: "MCP server"
+description: "Connect AI clients to the lev8 API through the local stdio MCP adapter."
+---
+
+The lev8 MCP server exposes Entity Search, Contact Search, and credit balance as typed tools for AI clients. It is a local protocol adapter: every tool call uses the public lev8 HTTP API and keeps the same API-key authentication, concurrency limits, idempotency rules, and credit billing.
+
+<Note>
+  The current release supports local `stdio` transport only. It does not provide a hosted MCP URL or OAuth flow. You need a local build of the MCP executable; your lev8 contact can provide the executable or build access.
+</Note>
+
+## Prerequisites
+
+- A local lev8 MCP executable.
+- An active [API key](https://app.lev8.com/api-tokens) with the scopes required by the tools you call.
+- The API base URL `https://app.lev8.com`.
+
+When building from an authorized source checkout, the server entry point is `./cmd/mcp`:
+
+```bash
+go build -o ./bin/lev8-mcp ./cmd/mcp
+```
+
+## Configure your MCP client
+
+The server reads its API address and Token from the process environment. The Token is not a tool argument and is never exposed in tool schemas.
+
+```json
+{
+  "mcpServers": {
+    "lev8": {
+      "command": "/absolute/path/to/lev8-mcp",
+      "env": {
+        "ANOTHERME_API_BASE_URL": "https://app.lev8.com",
+        "ANOTHERME_API_TOKEN": "lev8_live_..."
+      }
+    }
+  }
+}
+```
+
+Restart the AI client after changing its MCP configuration, then confirm that it lists the five tools below.
+
+<Warning>
+  Store the complete Token in a local secrets mechanism when your MCP client supports one. Do not commit it to a repository, share the configuration file, pass it as a tool argument, or place it in prompts.
+</Warning>
+
+## Tools
+
+| Tool | Inputs | Behavior |
+| --- | --- | --- |
+| `entity_search_create` | `entity_type`, `objective`, optional `limit`, `enable_web_search`, enrichment, deduplication, and `idempotency_key` | Creates a billed asynchronous task. Generates a random idempotency key when omitted. |
+| `entity_search_status` | `leads_search_id` | Reads progress. A terminal call can advance billing settlement. |
+| `entity_search_fetch` | `leads_search_id`, optional `pts` and `num` | Reads one positional page of available entities. |
+| `contact_search` | `contact_type`, `objective`, optional `idempotency_key` | Finds an email or phone through the billed Contact Search API. |
+| `credit_balance` | None | Reads the available credits for the configured Token's user. |
+
+`entity_search_create` defaults `limit` to `20`. `entity_search_fetch` defaults `pts` to `0` and `num` to `5`, with a maximum `num` of `500`.
+
+## Entity Search workflow
+
+<Steps>
+  <Step title="Create">
+    Call `entity_search_create` and save `leads_search_id` from the structured result.
+  </Step>
+  <Step title="Monitor">
+    Call `entity_search_status` until the state becomes `done` or `error`. You can begin fetching as soon as `ready_count` is positive.
+  </Step>
+  <Step title="Fetch">
+    Call `entity_search_fetch`. Advance `pts` by the returned `count` until all `ready_count` results have been read.
+  </Step>
+</Steps>
+
+A terminal `error` can still have ready results. Fetch them before closing the task.
+
+## Idempotency and retries
+
+The MCP server generates a cryptographically random key when `entity_search_create` or `contact_search` omits `idempotency_key`. Supply your own stable key when an Agent workflow may be resumed or replayed.
+
+The first release does not automatically retry paid POST operations. If a tool call ends without a known response, resolve or replay the original logical request with the same key rather than starting a second request with a new key.
+
+## Security boundaries
+
+- The server connects only to the base URL fixed at process startup; tool inputs cannot select another URL.
+- HTTP redirects are not followed.
+- The adapter does not connect directly to lev8 databases, queues, or caches.
+- API-key validation, billing, task ownership, and concurrency enforcement remain server-side.
+- The adapter does not offer Token creation, listing, or revocation tools.
+- Objective text, search results, contact details, Tokens, and complete HTTP bodies are not written to MCP logs.
+- HTTP and upstream errors are mapped to stable tool errors without exposing response bodies or internal request details.

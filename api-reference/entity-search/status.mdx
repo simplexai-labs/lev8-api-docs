@@ -4,13 +4,14 @@ description: "Check Entity Search task progress and readable result count."
 openapi: "GET /v1/entity-search/status"
 ---
 
-Returns task progress, the current `ready_count`, and any task-level failure.
+Returns the latest progress for a task created by the same API key. A terminal status request can also complete billing settlement.
 
 ## Example
 
 ```bash
-curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_01JABCDEF123456789" \
-  --header "x-api-key: $LEV8_API_KEY"
+curl --get "https://app.lev8.com/v1/entity-search/status" \
+  --header "x-api-key: $LEV8_API_KEY" \
+  --data-urlencode "leads_search_id=leads_search_01JABCDEF123456789"
 ```
 
 ## Response
@@ -19,23 +20,28 @@ curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_
 {
   "object": "entity_search_status",
   "leads_search_id": "leads_search_01JABCDEF123456789",
-  "meta": {
-    "entity_type": "company",
-    "objective": "AI startups that raised Series A in 2024",
-    "limit": 20
-  },
   "status": {
     "status": "running",
-    "verified_count": 12,
     "ready_count": 10,
-    "stop_reason": null
-  },
-  "error": null,
-  "created_at": "2026-08-04T00:00:00Z",
-  "updated_at": "2026-08-04T00:00:08Z"
+    "verified_count": 12
+  }
 }
 ```
 
-Task status can be `created`, `running`, `done`, or `error`. Finished tasks can return `stop_reason` values such as `limit`, `source_finished`, `no_data_timeout`, or `rejected_streak`.
+| Field | Description |
+| --- | --- |
+| `status.status` | `created`, `running`, `done`, or `error`. |
+| `status.ready_count` | Results currently available through Fetch. |
+| `status.verified_count` | Candidates checked so far, including accepted and rejected candidates; always at least `ready_count`. |
+| `status.stop_reason` | Terminal reason when available; omitted otherwise. |
+| `status.error` | The fixed value `internal error` for a failed task; omitted otherwise. |
 
-See [Task results](/api-reference/task-results) for the recommended polling and fetch loop.
+Known `stop_reason` values include `limit`, `source_finished`, `no_data_timeout`, and `rejected_streak`. Treat new values as forward-compatible strings.
+
+<Note>
+  A task with `status: error` can still have a positive `ready_count`. Fetch those completed results before closing the task locally.
+</Note>
+
+Status is available only to the exact API key that created the task. A missing task and a task owned by another key both return `404 not_found`.
+
+See [Task results](/api-reference/task-results) for the complete polling and fetch loop.

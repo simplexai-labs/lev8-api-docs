@@ -9,15 +9,16 @@ Entity Search runs as an asynchronous task:
 2. [`GET /v1/entity-search/status`](/api-reference/entity-search/status) returns task progress and `ready_count`.
 3. [`GET /v1/entity-search/fetch`](/api-reference/entity-search/fetch) returns results from a position `pts` with a maximum batch size `num`.
 
-The task may produce results while it is still running. A client is done reading when the task status is `done` and the client has fetched every result up to `ready_count`.
+The task may produce results while it is still running. A client is done reading when the task status is `done` or `error` and the client has fetched every result up to `ready_count`.
 
 ## Headers
 
 | Header | Required | Description |
 | --- | --- | --- |
-| `Content-Type: application/json` | For `create_task` | Other media types can be rejected. |
+| `Content-Type: application/json` | For `create_task` | Other media types return `422`. |
 | `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
 | `x-api-key` | Yes | Your active lev8 External API key. |
+| `Idempotency-Key` | For `create_task` | Required stable value from 1 to 128 characters for this logical task. |
 
 ## Create task
 
@@ -28,12 +29,14 @@ The task may produce results while it is still running. A client is done reading
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `entity_type` | string enum | Yes | - | Entity type to search. See [supported entity types](#supported-entity-types). |
-| `objective` | string | Yes | - | Natural-language search target. Returned entities should satisfy this objective. |
-| `limit` | integer | No | `20` | Maximum number of deduplicated entities to produce. Recommended range is `5` to `500`; the service can return fewer. |
+| `objective` | string | Yes | - | Natural-language search target, 1 to 4,000 UTF-8 bytes after trimming. |
+| `limit` | integer | No | `20` | Maximum number of deduplicated entities to produce, from `1` to `500`; the service can return fewer. |
 | `enable_web_search` | boolean | No | `false` | Keeps database search and additionally enables open web search mode. |
-| `enrich_fields` | string[] | No | `null` | Extra fields to return under `entities[].enrich_fields`. |
-| `dedup_lev8_leads` | string[] | No | `[]` | Previous `leads_search_id` values whose results should be excluded. |
-| `dedup_custom_leads` | string[] | No | `[]` | Existing lead names to exclude from this task. |
+| `enrich_fields` | string[] | No | omitted | Extra fields to return under `entities[].enrich_fields`, up to 20 items. |
+| `dedup_lev8_leads` | string[] | No | omitted | Previous `leads_search_id` values whose results should be excluded, up to 100 items. |
+| `dedup_custom_leads` | string[] | No | omitted | Existing lead names to exclude from this task, up to 1,000 items. |
+
+The complete JSON body must be at most 1 MiB. Unknown fields, malformed JSON, and multiple JSON objects are rejected.
 
 ### Enable web search
 
@@ -84,6 +87,7 @@ curl "https://app.lev8.com/v1/entity-search/create_task" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "x-api-key: $LEV8_API_KEY" \
+  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
   --data '{
     "entity_type": "company",
     "objective": "AI startups that raised Series A in 2024",
@@ -113,7 +117,7 @@ curl "https://app.lev8.com/v1/entity-search/create_task" \
 | `entity_type` | string | Entity type used by the task. |
 | `objective` | string | Search objective used by the task. |
 | `limit` | integer | Maximum number of entities this task should produce. |
-| `status` | string | Creation state. A successful create response returns `created`. |
+| `status` | string | Usually `created`; an idempotent replay can return the task's current state. |
 | `created_at` | string | UTC RFC 3339 timestamp for task creation. |
 
 ## Check status
@@ -139,20 +143,11 @@ curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_
 {
   "object": "entity_search_status",
   "leads_search_id": "leads_search_01JABCDEF123456789",
-  "meta": {
-    "entity_type": "company",
-    "objective": "AI startups that raised Series A in 2024",
-    "limit": 20
-  },
   "status": {
     "status": "running",
     "verified_count": 12,
-    "ready_count": 10,
-    "stop_reason": null
-  },
-  "error": null,
-  "created_at": "2026-08-04T00:00:00Z",
-  "updated_at": "2026-08-04T00:00:08Z"
+    "ready_count": 10
+  }
 }
 ```
 
@@ -160,16 +155,13 @@ curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_
 | --- | --- | --- |
 | `object` | string | Always `entity_search_status`. |
 | `leads_search_id` | string | Search task ID. |
-| `meta.entity_type` | string | Entity type used by the task. |
-| `meta.objective` | string | Search objective used by the task. |
-| `meta.limit` | integer | Maximum number of entities this task should produce. |
 | `status.status` | string | One of `created`, `running`, `done`, or `error`. |
 | `status.verified_count` | integer | Number of entities checked so far, including accepted and rejected candidates. |
 | `status.ready_count` | integer | Number of result entities currently available through `fetch`. |
-| `status.stop_reason` | string or null | `null` while running. Finished tasks can return `limit`, `source_finished`, `no_data_timeout`, or `rejected_streak`. |
-| `error` | object or null | Failure details when `status.status` is `error`; otherwise `null`. |
-| `created_at` | string | UTC RFC 3339 timestamp for task creation. |
-| `updated_at` | string | UTC RFC 3339 timestamp for the latest task update. |
+| `status.stop_reason` | string | Terminal reason when available; omitted otherwise. |
+| `status.error` | string | The fixed value `internal error` for a failed task; omitted otherwise. |
+
+`verified_count` includes accepted and rejected candidates, so it is always greater than or equal to `ready_count`. Known `stop_reason` values include `limit`, `source_finished`, `no_data_timeout`, and `rejected_streak`.
 
 ## Fetch results
 
@@ -197,7 +189,7 @@ curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_0
 To continue, use the previous `pts + count`:
 
 ```bash
-curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_01JABCDEF123456789&pts=5&num=5" \
+curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_01JABCDEF123456789&pts=1&num=5" \
   --header "x-api-key: $LEV8_API_KEY"
 ```
 
@@ -210,8 +202,8 @@ curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_0
   "status": "running",
   "pts": 0,
   "num": 5,
-  "count": 5,
-  "ready_count": 10,
+  "count": 1,
+  "ready_count": 1,
   "limit": 20,
   "entities": [
     {
@@ -232,8 +224,7 @@ curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_0
         }
       }
     }
-  ],
-  "created_at": "2026-08-04T00:00:05Z"
+  ]
 }
 ```
 
@@ -248,7 +239,6 @@ curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_0
 | `ready_count` | integer | Total number of result entities currently available to fetch. |
 | `limit` | integer | Maximum number of entities this task should produce. |
 | `entities` | array | Result entities for this position range. |
-| `created_at` | string | UTC RFC 3339 timestamp for this result object. |
 
 ### Entity fields
 
@@ -274,7 +264,7 @@ Common `links` keys by entity type:
 
 ## Example loop
 
-This Node.js example distinguishes a task that is `done` from a client that has fully consumed the available results.
+This Node.js example distinguishes a terminal task from a client that has fully consumed the available results.
 
 ```javascript
 const API_BASE = "https://app.lev8.com";
@@ -296,6 +286,7 @@ async function lev8(path, options = {}) {
 
 const task = await lev8("/v1/entity-search/create_task", {
   method: "POST",
+  headers: { "Idempotency-Key": crypto.randomUUID() },
   body: JSON.stringify({
     entity_type: "company",
     objective: "AI startups that raised Series A in 2024",
@@ -311,8 +302,6 @@ while (true) {
     `/v1/entity-search/status?leads_search_id=${encodeURIComponent(task.leads_search_id)}`,
   );
   const state = status.status.status;
-  if (state === "error") throw new Error(status.error?.message ?? "search failed");
-
   while (pts < status.status.ready_count) {
     const page = await lev8(
       `/v1/entity-search/fetch?leads_search_id=${encodeURIComponent(task.leads_search_id)}&pts=${pts}&num=${num}`,
@@ -322,7 +311,7 @@ while (true) {
     pts += page.count;
   }
 
-  if (state === "done" && pts >= status.status.ready_count) break;
+  if ((state === "done" || state === "error") && pts >= status.status.ready_count) break;
   await new Promise((resolve) => setTimeout(resolve, 3000));
 }
 ```
@@ -333,11 +322,14 @@ Entity Search uses the standard [error envelope](/api-reference/errors).
 
 | Status | Meaning |
 | --- | --- |
-| `400` | Malformed JSON or query parameters. |
 | `401` | API key is missing or invalid. |
-| `404` | `leads_search_id` does not exist or has expired. |
-| `416` | `pts` is outside the currently readable range. Call `status` to check `ready_count`. |
+| `402` | The account cannot reserve the maximum task cost. |
+| `403` | API key is revoked, expired, or lacks Entity Search access. |
+| `404` | `leads_search_id` does not exist or belongs to another API key. |
+| `409` | The idempotency key conflicts with another body or task creation is unresolved. |
 | `422` | Validation failed, such as unsupported `entity_type`, invalid `limit`, invalid `pts` or `num`, or invalid `enrich_fields`. |
+| `429` | The user-level or global active-task limit was reached. |
 | `500` | Server error. |
+| `503` | Entity Search or pricing for this entity type is not enabled. |
 
 Authentication, billing, concurrency, and service availability errors are documented in [Errors](/api-reference/errors).
