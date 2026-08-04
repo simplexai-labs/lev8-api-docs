@@ -41,32 +41,26 @@ console.log(balance.available_credits);
 ```
 
 ```python Python
-import asyncio
 import json
 import os
 import httpx
 
 
-async def get_credit_balance() -> None:
-    async with httpx.AsyncClient(timeout=30) as client:
-        response = await client.get(
-            "https://app.lev8.com/v1/credit/balance",
-            headers={"x-api-key": os.environ["LEV8_API_KEY"]},
-        )
-        if response.is_error:
-            try:
-                message = response.json().get("error", {}).get("message")
-            except (json.JSONDecodeError, UnicodeDecodeError):
-                message = None
-            raise RuntimeError(
-                message or f"lev8 request failed with HTTP {response.status_code}"
-            )
+response = httpx.get(
+    "https://app.lev8.com/v1/credit/balance",
+    headers={"x-api-key": os.environ["LEV8_API_KEY"]},
+    timeout=30,
+)
+if response.is_error:
+    try:
+        message = response.json().get("error", {}).get("message")
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        message = None
+    raise RuntimeError(
+        message or f"lev8 request failed with HTTP {response.status_code}"
+    )
 
-        print(response.json()["available_credits"])
-
-
-if __name__ == "__main__":
-    asyncio.run(get_credit_balance())
+print(response.json()["available_credits"])
 ```
 
 </CodeGroup>
