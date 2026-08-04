@@ -1,0 +1,73 @@
+---
+title: "Task results"
+description: "Read Entity Search results with task status, ready counts, and position-based fetches."
+---
+
+Entity Search results are read from an asynchronous task. The server does not return pages or cursors. Your client tracks a numeric position, `pts`, and advances it by the `count` returned from each fetch.
+
+## Lifecycle
+
+| Status | Meaning | Client action |
+| --- | --- | --- |
+| `created` | The task was accepted and is queued or starting. | Poll `status` or try `fetch` after a short delay. |
+| `running` | The task is still verifying candidates. | Fetch any results with `ready_count > pts`, then poll again. |
+| `done` | The producer has stopped. | Continue fetching until `pts >= ready_count`. |
+| `error` | The task failed after being accepted. | Stop reading, keep `leads_search_id`, and inspect `error`. |
+
+<Warning>
+  `done` means no more results will be produced. It does not mean your client has already read every available result. Finish only after `status` is `done` and your local `pts` is greater than or equal to `ready_count`.
+</Warning>
+
+## Fetch positions
+
+Use `GET /v1/entity-search/fetch` with:
+
+| Parameter | Description |
+| --- | --- |
+| `leads_search_id` | Search task ID returned by `create_task`. |
+| `pts` | Zero-based result position to start reading from. Defaults to `0`. |
+| `num` | Maximum number of results to read in this call. Defaults to `5`. |
+
+Each response includes:
+
+| Field | Description |
+| --- | --- |
+| `pts` | The start position used by this fetch. |
+| `num` | The requested maximum result count. |
+| `count` | The number of entities actually returned. |
+| `ready_count` | The number of entities currently available to read. |
+| `status` | Current task status. |
+
+To fetch the next batch, set the next `pts` to the previous `pts + count`.
+
+## Read loop
+
+```javascript
+let pts = 0;
+const num = 5;
+
+while (true) {
+  const status = await getStatus(leadsSearchId);
+  const state = status.status.status;
+  if (state === "error") throw new Error(status.error?.message ?? "search failed");
+
+  while (pts < status.status.ready_count) {
+    const page = await fetchResults(leadsSearchId, { pts, num });
+    processEntities(page.entities);
+    if (page.count === 0) break;
+    pts += page.count;
+  }
+
+  if (state === "done" && pts >= status.status.ready_count) break;
+  await sleep(3000);
+}
+```
+
+## Practical rules
+
+- `limit` controls the total number of deduplicated leads the task can produce.
+- `num` controls only the maximum number of results returned by one `fetch` call.
+- A `fetch` response can return fewer than `num` entities.
+- If `ready_count` is `0`, wait and poll again unless the task is `done`.
+- If `fetch` returns `416`, call `status` and resume from a valid `pts` within `0 <= pts < ready_count`.
+- Store `leads_search_id` with your own job record. It is required for status checks, fetches, support, and later `dedup_lev8_leads` requests.

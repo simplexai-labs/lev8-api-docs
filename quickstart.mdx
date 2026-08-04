@@ -1,6 +1,6 @@
 ---
 title: "Quickstart"
-description: "Make your first Entity Search request and consume the SSE response."
+description: "Create an Entity Search task, check status, and fetch results."
 ---
 
 ## Before you begin
@@ -9,7 +9,7 @@ You need:
 
 - An active API key with Entity Search access, created from [API Tokens](https://app.lev8.com/api-tokens).
 - Enough credits to reserve the maximum cost of the request.
-- A server-side HTTP client that can consume Server-Sent Events (SSE).
+- A server-side HTTP client.
 
 <Steps>
   <Step title="Set server-side environment variables">
@@ -31,14 +31,13 @@ You need:
     The returned `available_credits` already excludes credits reserved by requests that are still in progress.
   </Step>
 
-  <Step title="Send a streaming search request">
-    Use `--no-buffer` so curl prints each SSE event as it arrives. Supply a unique `Idempotency-Key` for the logical request.
+  <Step title="Create a search task">
+    Submit the search objective and save the returned `leads_search_id`.
 
     ```bash
-    curl --no-buffer "https://app.lev8.com/v1/entity-search" \
+    curl "https://app.lev8.com/v1/entity-search/create_task" \
       --request POST \
       --header "Content-Type: application/json" \
-      --header "Accept: text/event-stream" \
       --header "x-api-key: $LEV8_API_KEY" \
       --header "Idempotency-Key: $(uuidgen)" \
       --data '{
@@ -50,21 +49,31 @@ You need:
     ```
   </Step>
 
-  <Step title="Process events until [DONE]">
-    A successful stream contains zero or more `entity_search_batch` objects, one `entity_search_done` object, and a final `[DONE]` sentinel.
+  <Step title="Check task status">
+    Poll `status` until results are ready. `ready_count` is the number of entities currently available to fetch.
 
-    ```text
-    data: {"object":"entity_search_batch","batch_index":1,"count":2,"cum_count":2,"entities":[...]}
+    ```bash
+    export LEADS_SEARCH_ID="leads_search_01JABCDEF123456789"
 
-    data: {"object":"entity_search_done","cum_count":2,"stop_reason":"source_finished","finish":true}
-
-    data: [DONE]
+    curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=$LEADS_SEARCH_ID" \
+      --header "x-api-key: $LEV8_API_KEY"
     ```
+  </Step>
+
+  <Step title="Fetch available results">
+    Start from `pts=0`. After each response, compute the next position as `pts + count`.
+
+    ```bash
+    curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=$LEADS_SEARCH_ID&pts=0&num=5" \
+      --header "x-api-key: $LEV8_API_KEY"
+    ```
+
+    Continue fetching until the task status is `done` and your latest `pts + count` is greater than or equal to `ready_count`.
   </Step>
 </Steps>
 
 <Tip>
-  Save the `X-Request-Id` response header and the `leads_search_id` from stream events. They identify different layers of the request and are both useful when diagnosing a search.
+  Save both `X-Request-Id` from HTTP responses and the `leads_search_id` from `create_task`. They identify different layers of the request and are useful when diagnosing a search.
 </Tip>
 
 ## Next steps
@@ -76,10 +85,10 @@ You need:
   <Card title="Request fields" icon="sliders" href="/api-reference/entity-search">
     Choose an entity type, limit, enrichments, and deduplication inputs.
   </Card>
+  <Card title="Read task results" icon="list-checks" href="/api-reference/task-results">
+    Distinguish `done` from fully consumed results.
+  </Card>
   <Card title="Find contact details" icon="address-book" href="/api-reference/contact-search">
     Request an email address or phone number as a JSON response.
-  </Card>
-  <Card title="Build a resilient consumer" icon="wave-pulse" href="/api-reference/streaming-events">
-    Parse complete SSE frames, deduplicate batches, and handle stream errors.
   </Card>
 </CardGroup>

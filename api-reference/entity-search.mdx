@@ -1,48 +1,48 @@
 ---
 title: "Entity Search"
-description: "Search for people, companies, shopify stores, and creators with a natural-language objective."
+description: "Create asynchronous search tasks for people, companies, creators, and Shopify stores."
 ---
 
-`POST /v1/entity-search` accepts one JSON object and returns a Server-Sent Events stream.
+Entity Search runs as an asynchronous task:
+
+1. `POST /v1/entity-search/create_task` creates a search task and returns `leads_search_id`.
+2. `GET /v1/entity-search/status` returns task progress and `ready_count`.
+3. `GET /v1/entity-search/fetch` returns results from a position `pts` with a maximum batch size `num`.
+
+The task may produce results while it is still running. A client is done reading when the task status is `done` and the client has fetched every result up to `ready_count`.
 
 ## Headers
 
 | Header | Required | Description |
 | --- | --- | --- |
-| `Content-Type: application/json` | Yes | Other media types return `422`. |
-| `Accept: text/event-stream` | Recommended | Declares that the client expects an SSE response. |
+| `Content-Type: application/json` | For `create_task` | Other media types can be rejected. |
+| `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
 | `x-api-key` | Yes | Your active lev8 External API key. |
-| `Idempotency-Key` | Recommended | A unique value up to 128 characters for one logical request. |
+| `Idempotency-Key` | Recommended for `create_task` | A unique value up to 128 characters for one logical task creation request. |
 
-## Request body
+## Create task
 
-| Field | Type | Required | Constraints |
-| --- | --- | --- | --- |
-| `entity_type` | string | Yes | One of the supported values below. |
-| `objective` | string | Yes | Natural-language search objective, 1 to 4,000 UTF-8 bytes after trimming. |
-| `limit` | integer | No | Number of results requested, `1` to `500`; defaults to `10`. |
-| `enable_web_search` | boolean | No | Adds web-wide search on top of database search; defaults to `false`. |
-| `enrich_fields` | string[] | No | Additional fields to request, up to 20 items. Availability and cost depend on your access configuration. |
-| `dedup_lev8_leads` | string[] | No | Existing lev8 lead identifiers to exclude, up to 100 items. |
-| `dedup_custom_leads` | string[] | No | Your own lead identifiers to exclude, up to 1,000 items. |
+`POST /v1/entity-search/create_task`
 
-The complete request body must be at most 1 MiB. Unknown fields, malformed JSON, and multiple JSON objects are rejected.
+### Request body
 
-### Enable web search
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `entity_type` | string enum | Yes | - | Entity type to search. See [supported entity types](#supported-entity-types). |
+| `objective` | string | Yes | - | Natural-language search target. Returned entities should satisfy this objective. |
+| `limit` | integer | No | `20` | Maximum number of deduplicated entities to produce. Recommended range is `5` to `500`; the service can return fewer. |
+| `enable_web_search` | boolean | No | `false` | Keeps database search and additionally enables open web search mode. |
+| `enrich_fields` | string[] | No | `null` | Extra fields to return under `entities[].enrich_fields`. |
+| `dedup_lev8_leads` | string[] | No | `[]` | Previous `leads_search_id` values whose results should be excluded. |
+| `dedup_custom_leads` | string[] | No | `[]` | Existing lead names to exclude from this task. |
 
-<Tip>
-  Entity Search uses database search by default. Set `enable_web_search` to `true` to keep database search and also turn on web-wide search mode when freshness or broader discovery matters:
-
-  - Creator searches on X/Twitter, YouTube, TikTok, or Instagram.
-  - Shopify store searches by product, brand style, vertical category, or recent trend.
-  - Time-sensitive searches for entities that appeared, raised funding, launched, started hiring, or grew quickly in the last 30 days.
-
-  Keep it `false` for structured person or company searches. Turning it on usually increases latency and cost.
-</Tip>
+<Warning>
+  `enable_web_search: true` keeps the default database search and also turns on open web search mode. Use it for creator searches on X/Twitter, YouTube, TikTok, or Instagram, Shopify store discovery, or highly time-sensitive searches such as entities from the last 30 days. Turning it on usually increases latency and cost, so keep it `false` unless broader or fresher discovery is needed.
+</Warning>
 
 ### Deduplicate results
 
-Use deduplication fields when you already have leads that should not appear again. You can send either or both fields.
+Use deduplication when you already have leads that should not appear again. The task produces up to `limit` deduplicated leads after these exclusions.
 
 ```json
 {
@@ -54,51 +54,248 @@ Use deduplication fields when you already have leads that should not appear agai
 - `dedup_lev8_leads` excludes leads from earlier lev8 searches by `leads_search_id`.
 - `dedup_custom_leads` excludes your existing leads by name.
 
+### Enrich fields
+
+By default, entities include `name`, `links`, `description`, and `score`. Use `enrich_fields` to request additional fields. Each returned enrichment generally includes `content` and `reference`.
+
+```json
+{
+  "enrich_fields": ["funding stage", "headcount"]
+}
+```
+
 ### Supported entity types
 
-- `person`
-- `company`
-- `twitter_creator`
-- `youtube_creator`
-- `tiktok_creator`
-- `instagram_creator`
-- `shopify_store`
+| `entity_type` | Description |
+| --- | --- |
+| `company` | Company entities. |
+| `person` | Person entities. |
+| `twitter_creator` | X/Twitter creators. |
+| `youtube_creator` | YouTube creators. |
+| `tiktok_creator` | TikTok creators. |
+| `instagram_creator` | Instagram creators. |
+| `shopify_store` | Shopify stores. |
 
-<Note>
-  A supported type can still return `503 service_unavailable` when it is not enabled or priced for the current environment. Access is rolled out per entity type.
-</Note>
+### Example
 
-## Example request
-
-<Note>
-  These snippets distinguish the `entity_search_done` event from the terminal `[DONE]` sentinel. See [Streaming events](/api-reference/streaming-events) for production parsing and error handling.
-</Note>
-
-<CodeGroup>
-
-```bash cURL
-curl -N -X POST "https://app.lev8.com/v1/entity-search" \
+```bash
+curl "https://app.lev8.com/v1/entity-search/create_task" \
+  --request POST \
   --header "Content-Type: application/json" \
-  --header "Accept: text/event-stream" \
   --header "x-api-key: $LEV8_API_KEY" \
   --data '{
     "entity_type": "company",
     "objective": "AI startups that raised Series A in 2024",
-    "limit": 20
+    "limit": 20,
+    "enrich_fields": ["funding stage", "headcount"]
   }'
 ```
 
-```javascript Node.js
-import { createInterface } from "node:readline";
-import { Readable } from "node:stream";
+### Response
 
-const response = await fetch("https://app.lev8.com/v1/entity-search", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "text/event-stream",
-    "x-api-key": process.env.LEV8_API_KEY,
+```json
+{
+  "object": "entity_search_task",
+  "leads_search_id": "leads_search_01JABCDEF123456789",
+  "entity_type": "company",
+  "objective": "AI startups that raised Series A in 2024",
+  "limit": 20,
+  "status": "created",
+  "created_at": "2026-08-04T00:00:00Z"
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `object` | string | Always `entity_search_task`. |
+| `leads_search_id` | string | Search task ID for later `status` and `fetch` calls. It can also be used in later `dedup_lev8_leads` requests. |
+| `entity_type` | string | Entity type used by the task. |
+| `objective` | string | Search objective used by the task. |
+| `limit` | integer | Maximum number of entities this task should produce. |
+| `status` | string | Creation state. A successful create response returns `created`. |
+| `created_at` | string | UTC RFC 3339 timestamp for task creation. |
+
+## Check status
+
+`GET /v1/entity-search/status`
+
+### Query parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `leads_search_id` | string | Yes | The task ID returned by `create_task`. |
+
+### Example
+
+```bash
+curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_01JABCDEF123456789" \
+  --header "x-api-key: $LEV8_API_KEY"
+```
+
+### Response
+
+```json
+{
+  "object": "entity_search_status",
+  "leads_search_id": "leads_search_01JABCDEF123456789",
+  "meta": {
+    "entity_type": "company",
+    "objective": "AI startups that raised Series A in 2024",
+    "limit": 20
   },
+  "status": {
+    "status": "running",
+    "verified_count": 12,
+    "ready_count": 10,
+    "stop_reason": null
+  },
+  "error": null,
+  "created_at": "2026-08-04T00:00:00Z",
+  "updated_at": "2026-08-04T00:00:08Z"
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `object` | string | Always `entity_search_status`. |
+| `leads_search_id` | string | Search task ID. |
+| `meta.entity_type` | string | Entity type used by the task. |
+| `meta.objective` | string | Search objective used by the task. |
+| `meta.limit` | integer | Maximum number of entities this task should produce. |
+| `status.status` | string | One of `created`, `running`, `done`, or `error`. |
+| `status.verified_count` | integer | Number of entities checked so far, including accepted and rejected candidates. |
+| `status.ready_count` | integer | Number of result entities currently available through `fetch`. |
+| `status.stop_reason` | string or null | `null` while running. Finished tasks can return `limit`, `source_finished`, `no_data_timeout`, or `rejected_streak`. |
+| `error` | object or null | Failure details when `status.status` is `error`; otherwise `null`. |
+| `created_at` | string | UTC RFC 3339 timestamp for task creation. |
+| `updated_at` | string | UTC RFC 3339 timestamp for the latest task update. |
+
+## Fetch results
+
+`GET /v1/entity-search/fetch`
+
+### Query parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `leads_search_id` | string | Yes | The task ID returned by `create_task`. |
+| `pts` | integer | No | `0` | Result start position. The first result is position `0`. |
+| `num` | integer | No | `5` | Maximum number of results to return in this call. The service can return fewer. |
+
+<Note>
+  The response does not include a next cursor. After each fetch, compute the next `pts` as the current `pts + count`.
+</Note>
+
+### Example
+
+```bash
+curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_01JABCDEF123456789&pts=0&num=5" \
+  --header "x-api-key: $LEV8_API_KEY"
+```
+
+To continue, use the previous `pts + count`:
+
+```bash
+curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_01JABCDEF123456789&pts=5&num=5" \
+  --header "x-api-key: $LEV8_API_KEY"
+```
+
+### Response
+
+```json
+{
+  "object": "entity_search_items",
+  "leads_search_id": "leads_search_01JABCDEF123456789",
+  "status": "running",
+  "pts": 0,
+  "num": 5,
+  "count": 5,
+  "ready_count": 10,
+  "limit": 20,
+  "entities": [
+    {
+      "name": "Figure AI",
+      "links": {
+        "website": "https://www.figure.ai",
+        "linkedin_url": "https://www.linkedin.com/company/figure-ai"
+      },
+      "description": "AI robotics company building general purpose humanoid robots.",
+      "score": {
+        "score": "high",
+        "reason": "..."
+      },
+      "enrich_fields": {
+        "funding stage": {
+          "content": "Series B",
+          "reference": "..."
+        }
+      }
+    }
+  ],
+  "created_at": "2026-08-04T00:00:05Z"
+}
+```
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `object` | string | Always `entity_search_items`. |
+| `leads_search_id` | string | Search task ID. |
+| `status` | string | Current task status: `created`, `running`, `done`, or `error`. |
+| `pts` | integer | Result start position used by this response. |
+| `num` | integer | Requested maximum result count. |
+| `count` | integer | Actual number of entities returned. Use `pts + count` for the next fetch. |
+| `ready_count` | integer | Total number of result entities currently available to fetch. |
+| `limit` | integer | Maximum number of entities this task should produce. |
+| `entities` | array | Result entities for this position range. |
+| `created_at` | string | UTC RFC 3339 timestamp for this result object. |
+
+### Entity fields
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `entities[].name` | string | Unified entity name. |
+| `entities[].links` | object | Link fields with non-empty values only. |
+| `entities[].description` | string or null | Entity description when available. |
+| `entities[].score` | object | Relevance score and explanation. |
+| `entities[].enrich_fields` | object | Extra fields requested through `enrich_fields`. |
+
+Common `links` keys by entity type:
+
+| `entity_type` | `links` keys |
+| --- | --- |
+| `company` | `website`, `linkedin_url`, `twitter_url`, `instagram_url`, `tiktok_url`, `youtube_url`, `github_url` |
+| `person` | `linkedin_url` |
+| `twitter_creator` | `twitter_url` |
+| `youtube_creator` | `youtube_url` |
+| `tiktok_creator` | `tiktok_url` |
+| `instagram_creator` | `instagram_url` |
+| `shopify_store` | `main_page` |
+
+## Example loop
+
+This Node.js example distinguishes a task that is `done` from a client that has fully consumed the available results.
+
+```javascript
+const API_BASE = "https://app.lev8.com";
+const headers = {
+  "Content-Type": "application/json",
+  "x-api-key": process.env.LEV8_API_KEY,
+};
+
+async function lev8(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: { ...headers, ...options.headers },
+  });
+  if (!response.ok) {
+    throw new Error(`lev8 request failed with HTTP ${response.status}`);
+  }
+  return response.json();
+}
+
+const task = await lev8("/v1/entity-search/create_task", {
+  method: "POST",
+  headers: { "Idempotency-Key": crypto.randomUUID() },
   body: JSON.stringify({
     entity_type: "company",
     objective: "AI startups that raised Series A in 2024",
@@ -106,87 +303,41 @@ const response = await fetch("https://app.lev8.com/v1/entity-search", {
   }),
 });
 
-if (!response.ok) throw new Error(`HTTP ${response.status}`);
+let pts = 0;
+const num = 5;
 
-const lines = createInterface({
-  input: Readable.fromWeb(response.body),
-  crlfDelay: Infinity,
-});
+while (true) {
+  const status = await lev8(
+    `/v1/entity-search/status?leads_search_id=${encodeURIComponent(task.leads_search_id)}`,
+  );
+  const state = status.status.status;
+  if (state === "error") throw new Error(status.error?.message ?? "search failed");
 
-for await (const line of lines) {
-  if (!line.startsWith("data:")) {
-    continue;
+  while (pts < status.status.ready_count) {
+    const page = await lev8(
+      `/v1/entity-search/fetch?leads_search_id=${encodeURIComponent(task.leads_search_id)}&pts=${pts}&num=${num}`,
+    );
+    for (const entity of page.entities) console.log(entity.name);
+    if (page.count === 0) break;
+    pts += page.count;
   }
 
-  const data = line.slice(5).trim();
-  if (data === "[DONE]") {
-    console.log("stream closed");
-    break;
-  }
-
-  const event = JSON.parse(data);
-  if (event.object === "entity_search_batch") {
-    console.log(`batch ${event.batch_index}: ${event.count} entities`);
-  } else if (event.object === "entity_search_done") {
-    console.log(`done: ${event.cum_count} entities (${event.stop_reason})`);
-  } else if (event.object === "error") {
-    throw new Error(event.error?.message ?? "lev8 stream failed");
-  }
+  if (state === "done" && pts >= status.status.ready_count) break;
+  await new Promise((resolve) => setTimeout(resolve, 3000));
 }
 ```
 
-```python Python
-import asyncio
-import json
-import os
-import httpx
+## Errors
 
+Entity Search uses the standard [error envelope](/api-reference/errors).
 
-API_URL = "https://app.lev8.com/v1/entity-search"
+| Status | Meaning |
+| --- | --- |
+| `400` | Malformed JSON or query parameters. |
+| `401` | API key is missing or invalid. |
+| `404` | `leads_search_id` does not exist or has expired. |
+| `416` | `pts` is outside the currently readable range. Call `status` to check `ready_count`. |
+| `422` | Validation failed, such as unsupported `entity_type`, invalid `limit`, invalid `pts` or `num`, or invalid `enrich_fields`. |
+| `500` | Server error. |
 
-
-async def entity_search_stream() -> None:
-    payload = {
-        "entity_type": "company",
-        "objective": "AI startups that raised Series A in 2024",
-        "limit": 20,
-    }
-    headers = {
-        "Content-Type": "application/json",
-        "Accept": "text/event-stream",
-        "x-api-key": os.environ["LEV8_API_KEY"],
-    }
-
-    async with httpx.AsyncClient(timeout=600) as client:
-        async with client.stream("POST", API_URL, headers=headers, json=payload) as response:
-            response.raise_for_status()
-
-            async for line in response.aiter_lines():
-                if not line.startswith("data:"):
-                    continue
-
-                data = line.removeprefix("data:").strip()
-                if data == "[DONE]":
-                    print("stream closed")
-                    break
-
-                event = json.loads(data)
-                if event.get("object") == "entity_search_batch":
-                    print(f"batch {event['batch_index']}: {event['count']} entities")
-                elif event.get("object") == "entity_search_done":
-                    print(f"done: {event['cum_count']} entities ({event['stop_reason']})")
-                elif event.get("object") == "error":
-                    raise RuntimeError(event["error"]["message"])
-
-
-if __name__ == "__main__":
-    asyncio.run(entity_search_stream())
-```
-
-</CodeGroup>
-
-## Response
-
-On success, the response status is `200`, `Content-Type` is `text/event-stream`, and `X-Request-Id` contains the lev8 request ID. Read the stream as described in [Streaming events](/api-reference/streaming-events).
-
-The `entities` array contains the result data. Common fields include `name`, `links`, `description`, `score`, and requested enrichment data. Available fields vary by entity type and enrichment configuration; clients should ignore unknown fields and tolerate absent optional fields.
+Authentication, billing, idempotency, concurrency, and service availability errors are documented in [Errors](/api-reference/errors).

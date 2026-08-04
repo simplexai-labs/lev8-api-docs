@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "lev8 API",
-  "description": "Build live-web people and business intelligence into your product.",
+  "description": "Search for entities and contact details from your application.",
   "api": {
     "mdx": {
       "server": "https://app.lev8.com"
@@ -51,7 +51,7 @@
       {
         "group": "API behavior",
         "pages": [
-          "api-reference/streaming-events",
+          "api-reference/task-results",
           "api-reference/errors",
           "guides/idempotency",
           "guides/billing"
