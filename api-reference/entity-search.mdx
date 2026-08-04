@@ -18,7 +18,7 @@ The task may produce results while it is still running. A client is done reading
 | `Content-Type: application/json` | For `create_task` | Other media types return `422`. |
 | `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
 | `x-api-key` | Yes | Your active lev8 External API key. |
-| `Idempotency-Key` | For `create_task` | Required stable value from 1 to 128 characters for this logical task. |
+| `Idempotency-Key` | No | Optional stable value up to 128 characters. When omitted, lev8 generates one and returns it in the same response Header. |
 
 ## Create task
 
@@ -87,7 +87,7 @@ curl "https://app.lev8.com/v1/entity-search/create_task" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "x-api-key: $LEV8_API_KEY" \
-  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
+  --header "Idempotency-Key: $(uuidgen)" \
   --data '{
     "entity_type": "company",
     "objective": "AI startups that raised Series A in 2024",
@@ -119,6 +119,8 @@ curl "https://app.lev8.com/v1/entity-search/create_task" \
 | `limit` | integer | Maximum number of entities this task should produce. |
 | `status` | string | Usually `created`; an idempotent replay can return the task's current state. |
 | `created_at` | string | UTC RFC 3339 timestamp for task creation. |
+
+The response includes `Idempotency-Key`, `X-Request-Id`, and `Cache-Control: no-store`. Store all three values when the task must be recoverable after a lost connection.
 
 ## Check status
 
@@ -326,7 +328,7 @@ Entity Search uses the standard [error envelope](/api-reference/errors).
 | `402` | The account cannot reserve the maximum task cost. |
 | `403` | API key is revoked, expired, or lacks Entity Search access. |
 | `404` | `leads_search_id` does not exist or belongs to another API key. |
-| `409` | The idempotency key conflicts with another body or task creation is unresolved. |
+| `409` | The idempotency key conflicts with another body, task creation is unresolved, or the replay window expired. |
 | `422` | Validation failed, such as unsupported `entity_type`, invalid `limit`, invalid `pts` or `num`, or invalid `enrich_fields`. |
 | `429` | The user-level or global active-task limit was reached. |
 | `500` | Server error. |

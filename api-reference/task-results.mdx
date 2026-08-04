@@ -7,7 +7,7 @@ Entity Search separates task creation from result retrieval. This keeps long-run
 
 <Steps>
   <Step title="Create the task">
-    Call [`POST /v1/entity-search/create_task`](/api-reference/entity-search/create-task) with a required `Idempotency-Key`. Save the returned `leads_search_id` and `X-Request-Id`.
+    Call [`POST /v1/entity-search/create_task`](/api-reference/entity-search/create-task). `Idempotency-Key` is optional; save the returned key, `leads_search_id`, and `X-Request-Id`.
   </Step>
   <Step title="Monitor progress">
     Call [`GET /v1/entity-search/status`](/api-reference/entity-search/status). `ready_count` is the number of results currently available; `verified_count` includes accepted and rejected candidates.
@@ -203,7 +203,7 @@ if __name__ == "__main__":
 
 ## Recovery guidance
 
-- Persist the `Idempotency-Key`, `X-Request-Id`, and `leads_search_id` before treating task creation as complete.
+- Persist the returned `Idempotency-Key`, `X-Request-Id`, and `leads_search_id` before treating task creation as complete.
 - Reuse the original create key and body after a lost response. Do not generate a new key merely because the client timed out.
 - Resume fetching from the first `pts` that your application has not committed.
 - Back off between status calls. Active tasks continue progressing without a live client connection.

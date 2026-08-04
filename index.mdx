@@ -3,7 +3,7 @@ title: "lev8 API"
 description: "Search for entities and contact details from your application or AI client."
 ---
 
-The lev8 API turns a natural-language objective into matching entities or a requested contact detail. Use the HTTP API from server-side products, or connect an AI client through the local MCP adapter.
+The lev8 API turns a natural-language objective into matching entities or a requested contact detail. Use the HTTP API from server-side products, or connect an AI client through the hosted MCP endpoint.
 
 ## Start with Entity Search
 
@@ -14,7 +14,6 @@ curl "https://app.lev8.com/v1/entity-search/create_task" \
   --request POST \
   --header "Content-Type: application/json" \
   --header "x-api-key: $LEV8_API_KEY" \
-  --header "Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000" \
   --data '{
     "entity_type": "company",
     "objective": "AI infrastructure startups in the United States founded since 2023",
@@ -41,7 +40,7 @@ The response includes a `leads_search_id`. Use it with `GET /v1/entity-search/st
     Read results with `pts`, `num`, `count`, and `ready_count`.
   </Card>
   <Card title="MCP server" icon="plug" href="/mcp-reference">
-    Connect an AI client to five typed lev8 tools over local stdio.
+    Connect an AI client to five typed lev8 tools over Streamable HTTP.
   </Card>
 </CardGroup>
 
@@ -56,8 +55,8 @@ The response includes a `leads_search_id`. Use it with `GET /v1/entity-search/st
 - `GET /v1/credit/balance` reports the credits currently available for new requests.
 - Entity Search reserves a startup fee plus the maximum result cost, then settles against `ready_count`. Contact Search charges only when it finds a non-empty result.
 - Idempotent replays can return the existing Entity Search task or completed Contact Search response without repeating execution or billing.
-- The MCP adapter calls the same public endpoints and does not bypass API-key scopes, task isolation, concurrency, or billing.
+- The hosted MCP endpoint calls the same public APIs and does not bypass Token scopes, task isolation, concurrency, or billing.
 
 <Warning>
-  Credit history, bucket details, client-controlled scopes, hosted MCP transport, and OAuth for MCP are not part of the current public API.
+  Credit history, bucket details, client-controlled scopes, and MCP OAuth are not part of the current public API.
 </Warning>
