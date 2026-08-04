@@ -5,9 +5,9 @@ description: "Create asynchronous search tasks for people, companies, creators, 
 
 Entity Search runs as an asynchronous task:
 
-1. `POST /v1/entity-search/create_task` creates a search task and returns `leads_search_id`.
-2. `GET /v1/entity-search/status` returns task progress and `ready_count`.
-3. `GET /v1/entity-search/fetch` returns results from a position `pts` with a maximum batch size `num`.
+1. [`POST /v1/entity-search/create_task`](/api-reference/entity-search/create-task) creates a search task and returns `leads_search_id`.
+2. [`GET /v1/entity-search/status`](/api-reference/entity-search/status) returns task progress and `ready_count`.
+3. [`GET /v1/entity-search/fetch`](/api-reference/entity-search/fetch) returns results from a position `pts` with a maximum batch size `num`.
 
 The task may produce results while it is still running. A client is done reading when the task status is `done` and the client has fetched every result up to `ready_count`.
 
@@ -36,9 +36,11 @@ The task may produce results while it is still running. A client is done reading
 | `dedup_lev8_leads` | string[] | No | `[]` | Previous `leads_search_id` values whose results should be excluded. |
 | `dedup_custom_leads` | string[] | No | `[]` | Existing lead names to exclude from this task. |
 
-<Warning>
+### Enable web search
+
+<Tip>
   `enable_web_search: true` keeps the default database search and also turns on open web search mode. Use it for creator searches on X/Twitter, YouTube, TikTok, or Instagram, Shopify store discovery, or highly time-sensitive searches such as entities from the last 30 days. Turning it on usually increases latency and cost, so keep it `false` unless broader or fresher discovery is needed.
-</Warning>
+</Tip>
 
 ### Deduplicate results
 

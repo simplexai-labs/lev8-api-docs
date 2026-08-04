@@ -1,0 +1,54 @@
+---
+title: "Search contact"
+description: "Find an email address or phone number for one contact."
+api: "POST /v1/contact-search"
+---
+
+Searches for one email address or phone number and returns a JSON response.
+
+## Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `Content-Type: application/json` | Yes | Request body must be JSON. |
+| `x-api-key` | Yes | Your active lev8 External API key with Contact Search access. |
+| `Idempotency-Key` | Recommended | A unique value up to 128 characters for one logical lookup request. |
+
+## Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `contact_type` | string enum | Yes | `email` or `phone`. |
+| `objective` | string | Yes | Natural-language description of whose email or phone number to find. Include identity signals such as platform URLs or handles when available. |
+
+## Example
+
+```bash
+curl "https://app.lev8.com/v1/contact-search" \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "x-api-key: $LEV8_API_KEY" \
+  --data '{
+    "contact_type": "email",
+    "objective": "Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997"
+  }'
+```
+
+## Response
+
+```json
+{
+  "object": "contact_search_result",
+  "request": {
+    "contact_type": "email",
+    "objective": "Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997"
+  },
+  "result": {
+    "content": "maggie@example.com",
+    "reference": "..."
+  },
+  "created_at": "2026-07-29T00:00:00Z"
+}
+```
+
+See [Contact Search](/api-reference/contact-search) for objective guidance, billing behavior, and errors.
