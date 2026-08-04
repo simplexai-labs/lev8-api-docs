@@ -1,0 +1,62 @@
+---
+title: "Fetch results"
+description: "Read Entity Search results by position."
+api: "GET /v1/entity-search/fetch"
+---
+
+Fetches available entities from a search task. The client tracks `pts` locally and advances it by the returned `count`.
+
+## Query parameters
+
+| Parameter | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `leads_search_id` | string | Yes | The task ID returned by `create_task`. |
+| `pts` | integer | No | `0` | Zero-based result start position. |
+| `num` | integer | No | `5` | Maximum number of results to return in this call. |
+
+## Example
+
+```bash
+curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_01JABCDEF123456789&pts=0&num=5" \
+  --header "x-api-key: $LEV8_API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "entity_search_items",
+  "leads_search_id": "leads_search_01JABCDEF123456789",
+  "status": "running",
+  "pts": 0,
+  "num": 5,
+  "count": 5,
+  "ready_count": 10,
+  "limit": 20,
+  "entities": [
+    {
+      "name": "Figure AI",
+      "links": {
+        "website": "https://www.figure.ai",
+        "linkedin_url": "https://www.linkedin.com/company/figure-ai"
+      },
+      "description": "AI robotics company building general purpose humanoid robots.",
+      "score": {
+        "score": "high",
+        "reason": "..."
+      },
+      "enrich_fields": {
+        "funding stage": {
+          "content": "Series B",
+          "reference": "..."
+        }
+      }
+    }
+  ],
+  "created_at": "2026-08-04T00:00:05Z"
+}
+```
+
+The response does not include a next cursor. Use `pts + count` as the next `pts`, and finish only when task status is `done` and local `pts >= ready_count`.
+
+See [Task results](/api-reference/task-results) for details.

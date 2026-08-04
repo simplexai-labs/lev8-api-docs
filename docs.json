@@ -43,9 +43,29 @@
       {
         "group": "API reference",
         "pages": [
-          "api-reference/entity-search",
-          "api-reference/contact-search",
-          "api-reference/credit-balance"
+          {
+            "group": "Entity Search",
+            "root": "api-reference/entity-search",
+            "pages": [
+              "api-reference/entity-search/create-task",
+              "api-reference/entity-search/status",
+              "api-reference/entity-search/fetch"
+            ]
+          },
+          {
+            "group": "Contact Search",
+            "root": "api-reference/contact-search",
+            "pages": [
+              "api-reference/contact-search/search"
+            ]
+          },
+          {
+            "group": "Credit balance",
+            "root": "api-reference/credit-balance",
+            "pages": [
+              "api-reference/credit-balance/get-balance"
+            ]
+          }
         ]
       },
       {

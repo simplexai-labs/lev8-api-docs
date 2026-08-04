@@ -1,0 +1,47 @@
+---
+title: "Get status"
+description: "Check Entity Search task progress and readable result count."
+api: "GET /v1/entity-search/status"
+---
+
+Returns task progress, the current `ready_count`, and any task-level failure.
+
+## Query parameters
+
+| Parameter | Type | Required | Description |
+| --- | --- | --- | --- |
+| `leads_search_id` | string | Yes | The task ID returned by `create_task`. |
+
+## Example
+
+```bash
+curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_01JABCDEF123456789" \
+  --header "x-api-key: $LEV8_API_KEY"
+```
+
+## Response
+
+```json
+{
+  "object": "entity_search_status",
+  "leads_search_id": "leads_search_01JABCDEF123456789",
+  "meta": {
+    "entity_type": "company",
+    "objective": "AI startups that raised Series A in 2024",
+    "limit": 20
+  },
+  "status": {
+    "status": "running",
+    "verified_count": 12,
+    "ready_count": 10,
+    "stop_reason": null
+  },
+  "error": null,
+  "created_at": "2026-08-04T00:00:00Z",
+  "updated_at": "2026-08-04T00:00:08Z"
+}
+```
+
+Task status can be `created`, `running`, `done`, or `error`. Finished tasks can return `stop_reason` values such as `limit`, `source_finished`, `no_data_timeout`, or `rejected_streak`.
+
+See [Task results](/api-reference/task-results) for the recommended polling and fetch loop.
