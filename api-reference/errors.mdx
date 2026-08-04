@@ -1,18 +1,18 @@
 ---
 title: "Errors"
-description: "Handle lev8 HTTP errors, JSON request failures, and failures after an SSE stream begins."
+description: "Handle lev8 HTTP errors and task-level failures."
 ---
 
-Errors returned before streaming starts use a JSON envelope:
+HTTP errors use a JSON envelope:
 
 ```json
 {
   "object": "error",
   "error": {
     "type": "invalid_request_error",
-    "message": "limit must be between 1 and 1000",
-    "param": "limit",
-    "request_id": "req_..."
+    "message": "entity_type must be one of: person, company, twitter_creator, youtube_creator, tiktok_creator, instagram_creator, shopify_store",
+    "param": "entity_type",
+    "request_id": "req_01JABCDEF123456789"
   }
 }
 ```
@@ -21,37 +21,60 @@ Errors returned before streaming starts use a JSON envelope:
 
 ## HTTP status codes
 
-| Status | Error type | Meaning |
-| --- | --- | --- |
-| `401` | `authentication_error` | API key is missing, malformed, or unknown. |
-| `402` | `insufficient_credits` | The account cannot reserve the maximum request cost. |
-| `403` | `authentication_error` | API key is revoked, expired, or lacks endpoint access. |
-| `409` | `idempotency_error` | The same idempotency key was reused with a different request body. |
-| `409` | `request_already_exists` | The same idempotent request already exists; response replay is not available. |
-| `422` | `invalid_request_error` | Content type, JSON structure, field value, or request size is invalid. |
-| `429` | `concurrency_limit` | The user-level or service-level concurrent request limit was reached. |
-| `500` | `internal_error` | An internal dependency, upstream operation, protocol check, or settlement failed. |
-| `503` | `service_unavailable` | The endpoint or requested entity or contact type is not enabled or priced in this environment. |
+| Status | Meaning |
+| --- | --- |
+| `400` | Malformed JSON or query parameters. |
+| `401` | API key is missing, malformed, or unknown. |
+| `402` | The account cannot reserve the maximum request cost. |
+| `403` | API key is revoked, expired, or lacks endpoint access. |
+| `404` | `leads_search_id` does not exist or has expired. |
+| `409` | The same idempotency key was reused for an admitted request. |
+| `416` | `pts` is outside the currently readable range. |
+| `422` | Content type, JSON structure, field value, or request size is invalid. |
+| `429` | The user-level or service-level concurrent request limit was reached. |
+| `500` | An internal dependency, upstream operation, protocol check, or settlement failed. |
+| `503` | The endpoint or requested entity or contact type is not enabled or priced in this environment. |
 
 The API intentionally redacts upstream response bodies, internal request IDs, and implementation details.
 
-Not every status applies to every endpoint. In particular, Credit balance can return `401`, `403`, `500`, or `503`; it does not reserve credits and therefore does not return search billing or idempotency errors.
+Not every status applies to every endpoint. Credit balance can return `401`, `403`, `500`, or `503`; it does not reserve credits and therefore does not return search billing or idempotency errors.
 
-Contact Search returns errors before writing a success body. Upstream and response-protocol details are redacted, and a successful JSON result is not returned until billing settlement succeeds.
+## Task-level failures
 
-## Errors inside an SSE stream
+An Entity Search task can fail after `create_task` succeeds. In that case, `status` returns HTTP `200` with `status.status` set to `error` and an `error` object in the response body.
 
-Once the stream starts, later errors are delivered as an SSE `error` object while the HTTP status remains `200`. See [Streaming events](/api-reference/streaming-events#errors-after-streaming-starts).
+```json
+{
+  "object": "entity_search_status",
+  "leads_search_id": "leads_search_01JABCDEF123456789",
+  "status": {
+    "status": "error",
+    "verified_count": 12,
+    "ready_count": 5,
+    "stop_reason": null
+  },
+  "error": {
+    "type": "internal_error",
+    "message": "internal error",
+    "request_id": "req_01JABCDEF123456789"
+  }
+}
+```
+
+Treat task status `error` as a failed search, even though the status request itself succeeded.
+
+Contact Search returns errors before writing a success body. A successful JSON result is not returned until billing settlement succeeds.
 
 ## Retry guidance
 
 | Condition | Guidance |
 | --- | --- |
-| `422`, `401`, `403`, `402` | Fix the request, credential, or balance before retrying. |
+| `400`, `401`, `402`, `403`, `422` | Fix the request, credential, or balance before retrying. |
+| `404` for `leads_search_id` | Check that the task ID was copied correctly and has not expired. |
+| `416` on `fetch` | Call `status`, read `ready_count`, and resume from a valid `pts`. |
 | `429` | Wait before starting a new request. The API currently does not return `Retry-After`. |
-| `500`, `503` before any result | Retry with backoff and a new idempotency key only after deciding the original request will not be recovered. |
-| In-stream `error` after results | Preserve all IDs and contact lev8 support. The request may require reconciliation; do not automatically repeat it. |
+| `500`, `503`, or task status `error` | Retry with backoff only after deciding the original task will not be recovered. Preserve IDs for support. |
 
 <Tip>
-  Log the HTTP status, error `type`, `request_id`, `X-Request-Id`, and `leads_search_id`. Never log the API key or the full request if it contains sensitive search criteria.
+  Log the HTTP status, error `type`, error `request_id`, `X-Request-Id`, and `leads_search_id`. Never log the API key or the full request if it contains sensitive search criteria.
 </Tip>
