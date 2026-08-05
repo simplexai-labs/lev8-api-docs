@@ -21,14 +21,14 @@ Every Tool call goes through the public lev8 API, so API-key scopes, task owners
 
 ## Configure Codex
 
-Store the Token in an environment variable, then register the hosted endpoint:
+Store the Token in the `LEV8_API_KEY` environment variable, then register the hosted endpoint:
 
 ```bash
-export LEV8_MCP_TOKEN="lev8_live_..."
+export LEV8_API_KEY="lev8_live_..."
 
 codex mcp add lev8 \
   --url https://api.lev8.com/mcp \
-  --bearer-token-env-var LEV8_MCP_TOKEN
+  --bearer-token-env-var LEV8_API_KEY
 ```
 
 The value above is a placeholder. Use the complete Token shown once by lev8, and never commit it to source control or place it directly in the command.
