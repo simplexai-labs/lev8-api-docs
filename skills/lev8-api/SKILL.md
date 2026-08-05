@@ -1,36 +1,35 @@
 ---
 name: lev8-api
-description: Use the lev8 HTTP API and hosted MCP endpoint for Entity Search, Contact Search, and credit balance.
+description: Find people, companies, KOLs/creators, Shopify stores, and contact details through hosted Lev8 MCP tools.
 ---
 
-# lev8 API
+# Lev8 MCP
 
-Use this skill when a user asks to call lev8, configure the hosted lev8 MCP endpoint, or work with Entity Search, Contact Search, or credit balance.
+Use this skill when a user asks to configure the hosted Lev8 MCP endpoint, find people, find companies, find KOLs or creators, find Shopify stores, or find contact details through MCP tools.
 
 ## Authentication
 
-- HTTP API base URL: `https://app.lev8.com`
 - Hosted MCP endpoint: `https://api.lev8.com/mcp`
-- Use `LEV8_API_KEY` for HTTP API calls and MCP Bearer authentication.
+- Use `LEV8_API_KEY` for MCP Bearer authentication.
 - Never print, echo, cat, grep with output, paste, or log a complete lev8 Token.
 
 ## Entity Search
 
-Entity Search is asynchronous:
+Entity Search is asynchronous. Use the MCP tools in this order:
 
-1. `POST /v1/entity-search/create_task`
-2. `GET /v1/entity-search/status?leads_search_id=...`
-3. `GET /v1/entity-search/fetch?leads_search_id=...&pts=0&num=5`
+1. `entity_search_create`
+2. `entity_search_status`
+3. `entity_search_fetch`
 
 Continue fetching with the next `pts = pts + count`. Finish only when task status is `done` and local `pts >= ready_count`.
 
 ## Contact Search
 
-Use `POST /v1/contact-search` to find one email or phone number. Put identity signals in `objective` when available.
+Use `contact_search` to find one email or phone number. Put identity signals in `objective` when available.
 
 ## Credit Balance
 
-Use `GET /v1/credit/balance` for a safe smoke test. Print only status codes or non-sensitive response fields.
+Use `credit_balance` when the user asks to check available credits. Print only non-sensitive response fields.
 
 ## MCP
 
