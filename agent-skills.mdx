@@ -1,0 +1,64 @@
+---
+title: "Agent Skills"
+description: "Install the lev8 API Agent Skill for coding agents."
+---
+
+Install the lev8 API Agent Skill so your coding agent can use Entity Search, Contact Search, credit balance, and the hosted Lev8 MCP endpoint.
+
+You need an active External API Token from [API Tokens](https://app.lev8.com/api-tokens). Set it as `LEV8_API_KEY`.
+
+## Install
+
+Install globally for most Agent-Skills-compatible clients:
+
+```bash
+mkdir -p ~/.agents/skills/lev8-api && \
+curl -fsSL "https://raw.githubusercontent.com/simplexai-labs/lev8-api-docs/main/skills/lev8-api/SKILL.md" \
+  -o ~/.agents/skills/lev8-api/SKILL.md
+```
+
+For Codex, install into `~/.codex/skills/lev8-api`:
+
+```bash
+mkdir -p ~/.codex/skills/lev8-api && \
+curl -fsSL "https://raw.githubusercontent.com/simplexai-labs/lev8-api-docs/main/skills/lev8-api/SKILL.md" \
+  -o ~/.codex/skills/lev8-api/SKILL.md
+```
+
+Restart or rescan your agent after installing the skill.
+
+## Setup prompt
+
+Copy this prompt into your coding agent:
+
+```text
+Use the lev8-api Agent Skill.
+
+Goal:
+- Use the lev8 HTTP API and hosted MCP endpoint.
+- Keep lev8 Tokens out of chat, source control, logs, and Tool inputs.
+
+What to do:
+1. Check whether LEV8_API_KEY is available without printing the value:
+   printf '%s\n' "${LEV8_API_KEY:+api-key-set}"
+2. If not set, ask me to create a Token in https://app.lev8.com/api-tokens and set it in my own shell.
+3. Smoke-test with a safe status-only request:
+   curl -s -o /dev/null -w "%{http_code}\n" "https://app.lev8.com/v1/credit/balance" -H "x-api-key: $LEV8_API_KEY"
+4. For Entity Search, follow create_task, status, then fetch.
+5. For MCP, use https://api.lev8.com/mcp with Bearer authentication.
+
+Hard rule:
+- Never echo, cat, grep, paste, or log a complete lev8 Token.
+```
+
+## View source
+
+Read the skill definition before installing:
+
+[lev8-api/SKILL.md](https://raw.githubusercontent.com/simplexai-labs/lev8-api-docs/main/skills/lev8-api/SKILL.md)
+
+## Related
+
+- [Lev8 MCP](/mcp-reference)
+- [Entity Search](/api-reference/entity-search)
+- [Contact Search](/api-reference/contact-search)
