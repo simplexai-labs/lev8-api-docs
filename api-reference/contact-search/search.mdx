@@ -6,7 +6,7 @@ openapi: "POST /v1/contact-search"
 
 Searches for one email address or phone number and returns a JSON response.
 
-`Idempotency-Key` is optional. When omitted, lev8 generates one and returns the final value in the response Header.
+`Idempotency-Key` is optional. When omitted, Lev8 generates one and returns the final value in the response Header.
 
 ## Example
 
@@ -14,11 +14,11 @@ Searches for one email address or phone number and returns a JSON response.
 curl "https://app.lev8.com/v1/contact-search" \
   --request POST \
   --header "Content-Type: application/json" \
-  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
   --header "Idempotency-Key: $(uuidgen)" \
   --data '{
     "contact_type": "email",
-    "objective": "Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997"
+    "objective": "Find the work email of Jane Smith, VP of Engineering at Acme Corp. Owner signals: linkedin_url=https://www.linkedin.com/in/jane-smith-acme"
   }'
 ```
 
@@ -29,10 +29,10 @@ curl "https://app.lev8.com/v1/contact-search" \
   "object": "contact_search_result",
   "request": {
     "contact_type": "email",
-    "objective": "Find the work email of Maggie Hoi Ning Leung, Founder & Director at Pharos Consultancy Limited. Owner signals: linkedin_url=https://www.linkedin.com/in/maggie-hoi-ning-leung-a3bb2997"
+    "objective": "Find the work email of Jane Smith, VP of Engineering at Acme Corp. Owner signals: linkedin_url=https://www.linkedin.com/in/jane-smith-acme"
   },
   "result": {
-    "content": "maggie@example.com",
+    "content": "jane.smith@acmecorp.com",
     "reference": "..."
   },
   "created_at": "2026-07-29T00:00:00Z"

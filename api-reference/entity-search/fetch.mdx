@@ -12,7 +12,7 @@ Fetches results that are already available for a task. Fetch can be called while
 
 ```bash
 curl --get "https://app.lev8.com/v1/entity-search/fetch" \
-  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
   --data-urlencode "leads_search_id=leads_search_01JABCDEF123456789" \
   --data-urlencode "pts=0" \
   --data-urlencode "num=5"

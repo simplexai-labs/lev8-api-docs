@@ -9,7 +9,7 @@ description: "Replay the same logical request without duplicate search execution
 Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000
 ```
 
-When you omit it, lev8 generates a key and returns the final value in the response's `Idempotency-Key` Header. Keys you provide are trimmed and must contain at most 128 characters.
+When you omit it, Lev8 generates a key and returns the final value in the response's `Idempotency-Key` Header. Keys you provide are trimmed and must contain at most 128 characters.
 
 <Tip>
   Omitting the Header is convenient for one-off requests. For production jobs that must survive timeouts or process restarts, generate and persist a stable key before sending the request.

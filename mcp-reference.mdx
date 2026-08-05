@@ -1,63 +1,169 @@
 ---
 title: "Lev8 MCP"
-description: "Connect AI clients to the hosted lev8 MCP endpoint with an External API Token."
+description: "Connect Codex, Claude Code, Gemini CLI, Cursor, VS Code, and other AI clients to Lev8 search tools."
 ---
 
-The lev8 MCP endpoint exposes Entity Search, Contact Search, and credit balance as typed tools for AI clients.
-
-It uses **Streamable HTTP**, the remote MCP transport: your client sends tool calls over HTTPS to one hosted URL and receives JSON responses. There is no local MCP process, executable, or package to install.
+Lev8 MCP lets your AI assistant search companies, find contacts, and manage credits through one hosted endpoint. There is no local server, executable, or package to install.
 
 ```text
 https://api.lev8.com/mcp
 ```
 
-Every Tool call goes through the public lev8 API, so API-key scopes, task ownership, concurrency limits, idempotency handling, and credit billing still apply.
-
-## Prerequisites
-
-- An active External API Token created from [API Tokens](https://app.lev8.com/api-tokens).
-- The Tool scopes required for the operations you want to call.
-- An MCP client that supports remote Streamable HTTP and Bearer authentication.
-
-## Configure Codex
-
-Store the Token in the `LEV8_API_KEY` environment variable, then register the hosted endpoint:
+[Create an API Token](/authentication) and set it as an environment variable, then click to install:
 
 ```bash
 export LEV8_API_KEY="lev8_live_..."
-
-codex mcp add lev8 \
-  --url https://api.lev8.com/mcp \
-  --bearer-token-env-var LEV8_API_KEY
 ```
 
-The value above is a placeholder. Use the complete Token shown once by lev8, and never commit it to source control or place it directly in the command.
+<CardGroup cols={2}>
+  <Card
+    title="Add to Cursor"
+    icon="download"
+    href="cursor://anysphere.cursor-deeplink/mcp/install?name=lev8&config=eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vYXBpLmxldjguY29tL21jcCIsImhlYWRlcnMiOnsiQXV0aG9yaXphdGlvbiI6IkJlYXJlciAke2VudjpMRVY4X0FQSV9LRVl9In19"
+  >
+    Installs the config. Cursor reads `LEV8_API_KEY` from your environment at runtime.
+  </Card>
+  <Card
+    title="Add to VS Code"
+    icon="download"
+    href="https://vscode.dev/redirect/mcp/install?name=lev8&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fapi.lev8.com%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Alev8-token%7D%22%7D%7D"
+  >
+    Installs the config. VS Code prompts for the Token on first connection.
+  </Card>
+</CardGroup>
 
-Your MCP client sends the Token on each request as:
+## Connect your client
 
-```http
-Authorization: Bearer lev8_live_...
-```
+If you haven't created a Token yet, follow the [Authentication](/authentication) guide. Store the complete `lev8_live_...` value as `LEV8_API_KEY` in your environment.
 
-The Token is request-scoped. It is not a Tool input and does not appear in Tool schemas or results.
+<Warning>
+  Never commit your Token to source control. The values below are placeholders.
+</Warning>
 
-## Tools
+<Tabs>
+  <Tab title="Codex">
+    ```bash
+    export LEV8_API_KEY="lev8_live_..."
 
-| Tool | Inputs | Behavior |
-| --- | --- | --- |
-| `entity_search_create` | `entity_type`, `objective`, optional `limit`, `enable_web_search`, `enrich_fields`, `dedup_lev8_leads`, and `dedup_custom_leads` | Creates a billed asynchronous task. |
-| `entity_search_status` | `leads_search_id` | Reads progress. A terminal call can advance billing settlement. |
-| `entity_search_fetch` | `leads_search_id`, optional `pts` and `num` | Reads one positional page of available entities. |
-| `contact_search` | `contact_type`, `objective` | Finds an email or phone. Only a non-empty result is charged. |
-| `credit_balance` | None | Reads the available credits for the Token's billing account. |
+    codex mcp add lev8 \
+      --url https://api.lev8.com/mcp \
+      --bearer-token-env-var LEV8_API_KEY
+    ```
 
-`entity_search_create` defaults `limit` to `20`. `entity_search_fetch` defaults `pts` to `0` and `num` to `5`, with a maximum `num` of `500`.
+    Confirm the server is registered with `codex mcp list`. Restart Codex after adding it so the new Tools are loaded. The ChatGPT desktop app, Codex CLI, and Codex IDE extension share this configuration on the same host.
+  </Tab>
+
+  <Tab title="Claude Code">
+    ```bash
+    export LEV8_API_KEY="lev8_live_..."
+
+    claude mcp add-json --scope user lev8 \
+      '{"type":"http","url":"https://api.lev8.com/mcp","headers":{"Authorization":"Bearer ${LEV8_API_KEY}"}}'
+    ```
+
+    The single quotes preserve `${LEV8_API_KEY}` for Claude Code to resolve when it connects. Run `claude mcp get lev8` to inspect the saved configuration, then use `/mcp` inside Claude Code to check the connection.
+  </Tab>
+
+  <Tab title="Gemini CLI">
+    ```bash
+    export LEV8_API_KEY="lev8_live_..."
+
+    gemini mcp add --scope user --transport http \
+      --header "Authorization: Bearer ${LEV8_API_KEY}" \
+      lev8 https://api.lev8.com/mcp
+    ```
+
+    Run `gemini mcp list` to check the connection. Gemini CLI expands the environment variable when the command runs and saves the resulting header in your private user settings, so do not share that file.
+  </Tab>
+
+  <Tab title="Other">
+    Lev8 MCP works with any client that supports remote Streamable HTTP servers. Point the client at `https://api.lev8.com/mcp` and send the Token in the `Authorization` header:
+
+    ```http
+    Authorization: Bearer lev8_live_...
+    ```
+
+    The config key for the URL varies by client:
+
+    | Client | Config location | URL key |
+    | --- | --- | --- |
+    | Cursor | `~/.cursor/mcp.json` | `url` |
+    | VS Code | `.vscode/mcp.json` (Command Palette > MCP: Open User Configuration) | `url` |
+    | Windsurf | `~/.codeium/windsurf/mcp_config.json` | `serverUrl` |
+    | Zed | Zed `settings.json` (under `context_servers`) | `url` |
+    | Warp | Settings > MCP Servers > Add MCP Server | `url` |
+
+    Most clients use the standard `mcpServers` shape:
+
+    ```json
+    {
+      "mcpServers": {
+        "lev8": {
+          "type": "http",
+          "url": "https://api.lev8.com/mcp",
+          "headers": {
+            "Authorization": "Bearer YOUR_LEV8_API_KEY"
+          }
+        }
+      }
+    }
+    ```
+
+    The Token is request-scoped. It is not a Tool input and does not appear in Tool schemas or results.
+  </Tab>
+</Tabs>
+
+## Available Tools
+
+| Tool | Description |
+| --- | --- |
+| `entity_search_create` | Create a billed asynchronous search for companies, people, creators, or Shopify stores. |
+| `entity_search_status` | Check the progress of an entity search task. |
+| `entity_search_fetch` | Read one page of results from a completed or in-progress search. |
+| `contact_search` | Find an email or phone number. Only a non-empty result is charged. |
+| `credit_balance` | Read the available credits for your billing account. |
+
+See the [Entity Search](/api-reference/entity-search), [Contact Search](/api-reference/contact-search), and [Credit balance](/api-reference/credit-balance) API references for full parameter details.
+
+## Try it
+
+After the Tools appear in your client, ask it to use Lev8 in natural language:
+
+<Accordion title="Example prompts">
+  **Search for entities**
+
+  ```text
+  Use Lev8 to find 20 AI infrastructure companies in the United States.
+  ```
+
+  Calls `entity_search_create`, then `entity_search_status` and `entity_search_fetch` automatically.
+
+  **Find a contact**
+
+  ```text
+  Find the work email for the VP of Sales at Example Company using Lev8.
+  ```
+
+  Calls `contact_search` and returns the result directly.
+
+  **Check credits**
+
+  ```text
+  Check my Lev8 credit balance.
+  ```
+
+  Calls `credit_balance`.
+</Accordion>
+
+Your client chooses the relevant Tool and asks you to approve the call according to its own permission settings.
 
 ## Entity Search workflow
 
+Entity Search is asynchronous. Create a task, monitor it, then fetch results in pages.
+
 <Steps>
   <Step title="Create">
-    Call `entity_search_create` and save `leads_search_id` from the structured result.
+    Call `entity_search_create` with an `entity_type` and `objective`. Save the returned `leads_search_id`.
   </Step>
   <Step title="Monitor">
     Call `entity_search_status` until the state becomes `done` or `error`. You can begin fetching as soon as `ready_count` is positive.
@@ -67,20 +173,83 @@ The Token is request-scoped. It is not a Tool input and does not appear in Tool 
   </Step>
 </Steps>
 
-A terminal `error` can still have ready results. Fetch them before closing the task.
+<Tip>
+  A task with `status: error` can still have ready results. Fetch them before closing the task.
+</Tip>
 
-## Paid Tool retries
+## Contact Search workflow
 
-The MCP server generates an internal idempotency key for every `entity_search_create` and `contact_search` Tool call. That key is not exposed as a Tool input.
+Contact Search is synchronous and returns the result in a single call.
 
-The first release does not automatically retry paid POST operations. Calling the Tool again creates a new key and is treated as a new billable operation, so do not blindly repeat a call whose outcome is unknown.
+<Steps>
+  <Step title="Search">
+    Call `contact_search` with a `contact_type` (`email` or `phone`) and an `objective` describing the person and company. The result is returned directly.
+  </Step>
+</Steps>
 
-## Transport and authentication boundaries
+Only a non-empty result is charged. If no contact is found, no credits are deducted.
 
-- The endpoint is stateless and returns each MCP response as JSON. It does not create a persistent client session or send server-initiated notifications.
-- MCP requests use `POST` with JSON bodies; the hosted endpoint does not expose a separate SSE notification stream.
-- Authentication uses the existing `lev8_live_...` External API Token as a Bearer credential.
-- OAuth, dynamic client registration, browser authorization, and persistent sessions are not supported in the first release.
-- The MCP endpoint does not provide Token creation, listing, or revocation Tools.
-- Objective text, results, contact details, Tokens, and complete request or response bodies are not written to MCP logs.
-- HTTP and upstream failures are mapped to stable Tool errors without exposing internal response bodies.
+## Billing and retries
+
+Every Tool call goes through the Lev8 API, so [Token scopes](/authentication), [credit billing](/guides/billing), and [idempotency handling](/guides/idempotency) still apply.
+
+The MCP server generates an internal idempotency key for every `entity_search_create` and `contact_search` call. That key is not exposed as a Tool input.
+
+<Warning>
+  The first release does not automatically retry paid operations. Calling the Tool again creates a new key and is treated as a new billable operation. Do not repeat a call whose outcome is unknown.
+</Warning>
+
+## Troubleshooting
+
+<Accordion title="The server returns 401 Unauthorized">
+  Confirm the Token is complete, active, and sent as `Authorization: Bearer <token>`.
+
+  ```http
+  Authorization: Bearer lev8_live_...
+  ```
+</Accordion>
+
+<Accordion title="Tools do not appear">
+  Restart your client after changing its MCP configuration. Some clients require a full restart to detect new MCP servers.
+
+  Check the MCP server list or connection logs in your client to confirm `lev8` is registered.
+</Accordion>
+
+<Accordion title="A Tool reports a scope error">
+  Enable the required scope on your Token from [API Tokens](https://app.lev8.com/api-tokens), or create a new Token with the correct access.
+</Accordion>
+
+<Accordion title="A paid Tool times out">
+  Do not immediately call it again. The original operation may still have consumed credits. Check with `entity_search_status` or `credit_balance` before retrying.
+</Accordion>
+
+<Accordion title="Cursor cannot read the Token">
+  If Cursor was opened from the macOS Dock or another desktop launcher, that process may not have access to `LEV8_API_KEY`.
+
+  Launch Cursor from a terminal where the variable is exported, or configure the variable in your desktop environment.
+</Accordion>
+
+<Accordion title="Transport details">
+  - Lev8 MCP uses **Streamable HTTP** (`POST` with JSON). The endpoint is stateless and does not create persistent sessions or send server-initiated notifications.
+  - Authentication uses the `lev8_live_...` API Token as a Bearer credential. The HTTP API and MCP use the same Token.
+  - OAuth, dynamic client registration, and browser authorization are not supported in the first release.
+  - The MCP endpoint does not provide Token creation, listing, or revocation Tools.
+  - Objective text, results, contact details, and Tokens are not written to MCP logs.
+</Accordion>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Agent Skills" icon="robot" href="/agent-skills">
+    Install the Lev8 skill for Codex, Claude Code, or Cursor.
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Create, store, and rotate API keys.
+  </Card>
+  <Card title="Entity Search" icon="magnifying-glass" href="/api-reference/entity-search">
+    Review entity types, enrichment fields, and deduplication options.
+  </Card>
+  <Card title="Contact Search" icon="address-book" href="/api-reference/contact-search">
+    Find email addresses or phone numbers.
+  </Card>
+</CardGroup>

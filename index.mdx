@@ -1,19 +1,20 @@
 ---
-title: "lev8 API"
+title: "Lev8 API"
 description: "Search for entities and contact details from your application or AI client."
+sidebarTitle: "Overview"
 ---
 
-The lev8 API turns a natural-language objective into matching entities or a requested contact detail. Use the HTTP API from server-side products, or connect an AI client through the hosted MCP endpoint.
+The Lev8 API turns a natural-language objective into matching entities or a requested contact detail. Use the HTTP API from server-side products, or connect an AI client through the hosted MCP endpoint.
 
 ## Start with Entity Search
 
-Create an Entity Search task, poll its status, then fetch results by position.
+You need an API Token to make requests. [Create one from API Tokens](https://app.lev8.com/api-tokens) and set it in your environment — see [Authentication](/authentication) for a step-by-step guide.
 
 ```bash
 curl "https://app.lev8.com/v1/entity-search/create_task" \
   --request POST \
   --header "Content-Type: application/json" \
-  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
   --data '{
     "entity_type": "company",
     "objective": "AI infrastructure startups in the United States founded since 2023",
@@ -36,27 +37,20 @@ The response includes a `leads_search_id`. Use it with `GET /v1/entity-search/st
   <Card title="Contact Search" icon="address-book" href="/api-reference/contact-search">
     Find an email address or phone number with a JSON request.
   </Card>
-  <Card title="Task results" icon="list-checks" href="/api-reference/task-results">
-    Read results with `pts`, `num`, `count`, and `ready_count`.
-  </Card>
   <Card title="MCP server" icon="plug" href="/mcp-reference">
-    Connect an AI client to five typed lev8 tools over Streamable HTTP.
+    Connect an AI client to typed Lev8 tools over Streamable HTTP.
+  </Card>
+  <Card title="Agent Skills" icon="robot" href="/agent-skills">
+    Install the Lev8 skill for Codex, Claude Code, or Cursor.
   </Card>
 </CardGroup>
 
-## API behavior at a glance
+## How it works
 
-- Authentication uses an `x-api-key` header. API keys are separate from user sessions and internal service credentials.
-- Entity Search supports company, person, creator, and Shopify store entity types.
-- `POST /v1/entity-search/create_task` returns a `leads_search_id` for later status checks and result fetches.
-- `GET /v1/entity-search/fetch` reads results from `pts` and returns `count`; compute the next `pts` as `pts + count`.
-- A task is fully consumed when its status is `done` or `error` and your client has read every result up to `ready_count`.
-- `POST /v1/contact-search` returns one email or phone lookup as JSON after billing settles.
-- `GET /v1/credit/balance` reports the credits currently available for new requests.
-- Entity Search reserves a startup fee plus the maximum result cost, then settles against `ready_count`. Contact Search charges only when it finds a non-empty result.
-- Idempotent replays can return the existing Entity Search task or completed Contact Search response without repeating execution or billing.
-- The hosted MCP endpoint calls the same public APIs and does not bypass Token scopes, task isolation, concurrency, or billing.
+| Capability | Endpoint | Model |
+| --- | --- | --- |
+| Entity Search | `POST /v1/entity-search/create_task` | Asynchronous. Create a task, poll status, fetch results by position. |
+| Contact Search | `POST /v1/contact-search` | Synchronous. Returns one email or phone lookup. Charged only on a non-empty result. |
+| Credit balance | `GET /v1/credit/balance` | Returns available credits, excluding in-progress reservations. |
 
-<Warning>
-  Credit history, bucket details, client-controlled scopes, and MCP OAuth are not part of the current public API.
-</Warning>
+Authentication uses an `Authorization: Bearer` header. Entity Search reserves credits up front and settles against `ready_count` when the task completes. Idempotent replays return existing results without duplicate billing. The hosted [MCP endpoint](/mcp-reference) calls the same API and does not bypass scopes, concurrency, or billing.
