@@ -1,21 +1,21 @@
 ---
 title: "Agent Skills"
-description: "Install the lev8 API Agent Skill for your agents."
+description: "Install the Lev8 Agent Skill for your agents."
 ---
 
-Install the lev8 API Agent Skill so your agent can use Entity Search, Contact Search, and the hosted Lev8 MCP endpoint.
+Install the Lev8 Agent Skill so your agent can find people, companies, KOLs, Shopify stores, and contact details through the hosted Lev8 MCP endpoint.
 
 You need an active API Token from [API Tokens](https://app.lev8.com/api-tokens). Set it as the `LEV8_API_KEY` environment variable.
 
-## Setup prompt
+## Setup
 
 Copy this prompt into your agent:
 
 ```text
-Install and use the lev8-api Agent Skill.
+Install and use the Lev8 Agent Skill.
 
 Goal:
-- Use the lev8 HTTP API and hosted MCP endpoint.
+- Use the hosted Lev8 MCP endpoint.
 - Keep lev8 Tokens out of chat, source control, logs, and Tool inputs.
 
 What to do:
@@ -28,10 +28,9 @@ What to do:
 3. Check whether LEV8_API_KEY is available without printing the value:
    printf '%s\n' "${LEV8_API_KEY:+api-key-set}"
 4. If not set, ask me to create a Token in https://app.lev8.com/api-tokens and set it in my own shell.
-5. Smoke-test with a safe status-only request:
-   curl -s -o /dev/null -w "%{http_code}\n" "https://app.lev8.com/v1/credit/balance" -H "x-api-key: $LEV8_API_KEY"
-6. For Entity Search, follow create_task, status, then fetch.
-7. For MCP, use https://api.lev8.com/mcp with Bearer authentication from LEV8_API_KEY.
+5. Configure https://api.lev8.com/mcp with Bearer authentication from LEV8_API_KEY.
+6. To find people, companies, KOLs, or Shopify stores, use entity_search_create, entity_search_status, then entity_search_fetch.
+7. To find contact details, use contact_search.
 8. Tell me how to restart or rescan this agent so it discovers the skill.
 
 Hard rule:
