@@ -11,8 +11,7 @@ Use this skill when a user asks to call lev8, configure the hosted lev8 MCP endp
 
 - HTTP API base URL: `https://app.lev8.com`
 - Hosted MCP endpoint: `https://api.lev8.com/mcp`
-- Use `LEV8_API_KEY` for HTTP API calls.
-- Use `LEV8_MCP_TOKEN` for MCP Bearer authentication.
+- Use `LEV8_API_KEY` for HTTP API calls and MCP Bearer authentication.
 - Never print, echo, cat, grep with output, paste, or log a complete lev8 Token.
 
 ## Entity Search
@@ -40,7 +39,7 @@ Configure the hosted MCP endpoint with Bearer authentication. The Token is trans
 ```bash
 codex mcp add lev8 \
   --url https://api.lev8.com/mcp \
-  --bearer-token-env-var LEV8_MCP_TOKEN
+  --bearer-token-env-var LEV8_API_KEY
 ```
 
 ## References
