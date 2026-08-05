@@ -32,7 +32,7 @@ The task may produce results while it is still running. A client is done reading
 | `objective` | string | Yes | - | Natural-language search target, 1 to 4,000 UTF-8 bytes after trimming. |
 | `limit` | integer | No | `20` | Maximum number of deduplicated entities to produce, from `1` to `500`; the service can return fewer. |
 | `enable_web_search` | boolean | No | `false` | Keeps database search and additionally enables open web search mode. |
-| `enrich_fields` | string[] | No | omitted | Extra fields to return under `entities[].enrich_fields`, up to 20 items. |
+| `enrich_fields` | string[] | No | omitted | Extra fields to return under `entities[].enrich_fields`, up to 20 items. Not suitable for finding email addresses or phone numbers; use [Contact Search](/api-reference/contact-search) for contact details. |
 | `dedup_lev8_leads` | string[] | No | omitted | Previous `leads_search_id` values whose results should be excluded, up to 100 items. |
 | `dedup_custom_leads` | string[] | No | omitted | Existing lead names to exclude from this task, up to 1,000 items. |
 
@@ -60,7 +60,7 @@ Use deduplication when you already have leads that should not appear again. The 
 
 ### Enrich fields
 
-By default, entities include `name`, `links`, `description`, and `score`. Use `enrich_fields` to request additional fields. Each returned enrichment generally includes `content` and `reference`.
+By default, entities include `name`, `links`, `description`, and `score`. Use `enrich_fields` to request additional descriptive fields, such as funding stage or headcount. Each returned enrichment generally includes `content` and `reference`. Do not use `enrich_fields` to find email addresses or phone numbers; use [Contact Search](/api-reference/contact-search) for contact details.
 
 ```json
 {

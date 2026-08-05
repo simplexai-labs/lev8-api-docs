@@ -76,6 +76,7 @@ components:
           type:
             - array
             - "null"
+          description: Extra fields to return under `entities[].enrich_fields`, up to 20 items. Use this for descriptive attributes such as funding stage or headcount. It is not suitable for finding email addresses or phone numbers; use Contact Search for contact details.
           items:
             type: string
           maxItems: 20
