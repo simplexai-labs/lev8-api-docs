@@ -83,19 +83,19 @@
         ]
       },
       {
+        "group": "MCP",
+        "pages": [
+          "mcp-reference",
+          "agent-skills"
+        ]
+      },
+      {
         "group": "API behavior",
         "pages": [
           "api-reference/task-results",
           "api-reference/errors",
           "guides/idempotency",
           "guides/billing"
-        ]
-      },
-      {
-        "group": "MCP",
-        "pages": [
-          "mcp-reference",
-          "agent-skills"
         ]
       }
     ],
