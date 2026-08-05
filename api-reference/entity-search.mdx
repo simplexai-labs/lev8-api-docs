@@ -17,8 +17,8 @@ The task may produce results while it is still running. A client is done reading
 | --- | --- | --- |
 | `Content-Type: application/json` | For `create_task` | Other media types return `422`. |
 | `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
-| `x-api-key` | Yes | Your active lev8 External API key. |
-| `Idempotency-Key` | No | Optional stable value up to 128 characters. When omitted, lev8 generates one and returns it in the same response Header. |
+| `Authorization` | Yes | `Bearer lev8_live_...` — your active Lev8 API key. |
+| `Idempotency-Key` | No | Optional stable value up to 128 characters. When omitted, Lev8 generates one and returns it in the same response Header. |
 
 ## Create task
 
@@ -55,7 +55,7 @@ Use deduplication when you already have leads that should not appear again. The 
 }
 ```
 
-- `dedup_lev8_leads` excludes leads from earlier lev8 searches by `leads_search_id`.
+- `dedup_lev8_leads` excludes leads from earlier Lev8 searches by `leads_search_id`.
 - `dedup_custom_leads` excludes your existing leads by name.
 
 ### Enrich fields
@@ -86,7 +86,7 @@ By default, entities include `name`, `links`, `description`, and `score`. Use `e
 curl "https://app.lev8.com/v1/entity-search/create_task" \
   --request POST \
   --header "Content-Type: application/json" \
-  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
   --header "Idempotency-Key: $(uuidgen)" \
   --data '{
     "entity_type": "company",
@@ -136,7 +136,7 @@ The response includes `Idempotency-Key`, `X-Request-Id`, and `Cache-Control: no-
 
 ```bash
 curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_01JABCDEF123456789" \
-  --header "x-api-key: $LEV8_API_KEY"
+  --header "Authorization: Bearer $LEV8_API_KEY"
 ```
 
 ### Response
@@ -185,14 +185,14 @@ curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_
 
 ```bash
 curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_01JABCDEF123456789&pts=0&num=5" \
-  --header "x-api-key: $LEV8_API_KEY"
+  --header "Authorization: Bearer $LEV8_API_KEY"
 ```
 
-To continue, use the previous `pts + count`:
+If the first fetch returned `count: 1`, the next position is `0 + 1 = 1`:
 
 ```bash
 curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_01JABCDEF123456789&pts=1&num=5" \
-  --header "x-api-key: $LEV8_API_KEY"
+  --header "Authorization: Bearer $LEV8_API_KEY"
 ```
 
 ### Response
@@ -264,59 +264,9 @@ Common `links` keys by entity type:
 | `instagram_creator` | `instagram_url` |
 | `shopify_store` | `main_page` |
 
-## Example loop
+## Complete workflow examples
 
-This Node.js example distinguishes a terminal task from a client that has fully consumed the available results.
-
-```javascript
-const API_BASE = "https://app.lev8.com";
-const headers = {
-  "Content-Type": "application/json",
-  "x-api-key": process.env.LEV8_API_KEY,
-};
-
-async function lev8(path, options = {}) {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: { ...headers, ...options.headers },
-  });
-  if (!response.ok) {
-    throw new Error(`lev8 request failed with HTTP ${response.status}`);
-  }
-  return response.json();
-}
-
-const task = await lev8("/v1/entity-search/create_task", {
-  method: "POST",
-  headers: { "Idempotency-Key": crypto.randomUUID() },
-  body: JSON.stringify({
-    entity_type: "company",
-    objective: "AI startups that raised Series A in 2024",
-    limit: 20,
-  }),
-});
-
-let pts = 0;
-const num = 5;
-
-while (true) {
-  const status = await lev8(
-    `/v1/entity-search/status?leads_search_id=${encodeURIComponent(task.leads_search_id)}`,
-  );
-  const state = status.status.status;
-  while (pts < status.status.ready_count) {
-    const page = await lev8(
-      `/v1/entity-search/fetch?leads_search_id=${encodeURIComponent(task.leads_search_id)}&pts=${pts}&num=${num}`,
-    );
-    for (const entity of page.entities) console.log(entity.name);
-    if (page.count === 0) break;
-    pts += page.count;
-  }
-
-  if ((state === "done" || state === "error") && pts >= status.status.ready_count) break;
-  await new Promise((resolve) => setTimeout(resolve, 3000));
-}
-```
+See [Task results](/api-reference/task-results) for complete Node.js and Python examples that create a task, poll status, and fetch every result.
 
 ## Errors
 

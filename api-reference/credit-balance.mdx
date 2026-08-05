@@ -9,7 +9,7 @@ description: "Query the credits currently available to the billing account attac
 
 | Header | Required | Description |
 | --- | --- | --- |
-| `x-api-key` | Yes | Any active lev8 External API key. Entity Search scope is not required. |
+| `Authorization` | Yes | `Bearer lev8_live_...` — any active Lev8 API key. Entity Search scope is not required. |
 
 The endpoint does not accept a user ID or another billing-account identifier. The service always resolves the account from the supplied API key.
 
@@ -19,13 +19,13 @@ The endpoint does not accept a user ID or another billing-account identifier. Th
 
 ```bash cURL
 curl "https://app.lev8.com/v1/credit/balance" \
-  --header "x-api-key: $LEV8_API_KEY"
+  --header "Authorization: Bearer $LEV8_API_KEY"
 ```
 
 ```javascript Node.js
 const response = await fetch("https://app.lev8.com/v1/credit/balance", {
   headers: {
-    "x-api-key": process.env.LEV8_API_KEY,
+    Authorization: `Bearer ${process.env.LEV8_API_KEY}`,
   },
 });
 
@@ -48,7 +48,7 @@ import httpx
 
 response = httpx.get(
     "https://app.lev8.com/v1/credit/balance",
-    headers={"x-api-key": os.environ["LEV8_API_KEY"]},
+    headers={"Authorization": f"Bearer {os.environ['LEV8_API_KEY']}"},
     timeout=30,
 )
 if response.is_error:
@@ -96,6 +96,6 @@ The response includes `Cache-Control: no-store`. Clients should fetch it when th
 | `401` | `authentication_error` | The API key is missing, malformed, or unknown. |
 | `403` | `authentication_error` | The API key is revoked or expired. |
 | `500` | `internal_error` | The credential or credit service could not complete the request. |
-| `503` | `service_unavailable` | The External API is not enabled in this environment. |
+| `503` | `service_unavailable` | The API is not enabled in this environment. |
 
 Errors use the standard [error envelope](/api-reference/errors). Internal dependency details are never returned to the client.

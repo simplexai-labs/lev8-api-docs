@@ -10,7 +10,7 @@ Returns the latest progress for a task created by the same API key. A terminal s
 
 ```bash
 curl --get "https://app.lev8.com/v1/entity-search/status" \
-  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
   --data-urlencode "leads_search_id=leads_search_01JABCDEF123456789"
 ```
 

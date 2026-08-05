@@ -6,7 +6,7 @@ openapi: "POST /v1/entity-search/create_task"
 
 Creates an Entity Search task and returns a `leads_search_id` for later [Status](/api-reference/entity-search/status) and [Fetch](/api-reference/entity-search/fetch) calls.
 
-`Idempotency-Key` is optional and can contain up to 128 characters. When omitted, lev8 generates a key and returns it in the response Header. The complete JSON body must be at most 1 MiB; unknown fields and multiple JSON objects are rejected.
+`Idempotency-Key` is optional and can contain up to 128 characters. When omitted, Lev8 generates a key and returns it in the response Header. The complete JSON body must be at most 1 MiB; unknown fields and multiple JSON objects are rejected.
 
 ## Example
 
@@ -14,7 +14,7 @@ Creates an Entity Search task and returns a `leads_search_id` for later [Status]
 curl "https://app.lev8.com/v1/entity-search/create_task" \
   --request POST \
   --header "Content-Type: application/json" \
-  --header "x-api-key: $LEV8_API_KEY" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
   --header "Idempotency-Key: $(uuidgen)" \
   --data '{
     "entity_type": "company",

@@ -1,54 +1,69 @@
 ---
 title: "Authentication"
-description: "Use lev8 API keys safely from trusted server-side environments."
+description: "Create a Lev8 API Token and use it to authenticate requests."
 ---
 
-The External API uses a dedicated API key in the `x-api-key` header. It does not accept lev8 user-session tokens or internal service keys.
+The API authenticates every request with a Bearer token in the `Authorization` header:
 
 ```http
-x-api-key: lev8_live_<public-prefix>_<secret>
+Authorization: Bearer lev8_live_<public-prefix>_<secret>
 ```
 
-## Create and store a key
+The same header works for both the REST API and the [MCP endpoint](/mcp-reference).
 
-Create a key from [**API Tokens**](https://app.lev8.com/api-tokens) in your lev8 workspace. The complete value is shown once. After that, lev8 only displays a masked form such as `lev8_live_ab12cd34ef56_****`.
+<Note>
+  The legacy `x-api-key` header is still accepted for backward compatibility. New integrations should use `Authorization: Bearer`.
+</Note>
+
+## Create your Token
+
+<Steps>
+  <Step title="Open API Tokens">
+    Go to [**API Tokens**](https://app.lev8.com/api-tokens) in your Lev8 workspace. Sign in if prompted.
+  </Step>
+  <Step title="Create a new Token">
+    Click **Create Token**. Lev8 generates a Token that starts with `lev8_live_`.
+  </Step>
+  <Step title="Copy it immediately">
+    The complete Token is **shown only once**. Copy it now and store it in a secrets manager or your shell profile. After you close the dialog, Lev8 only displays a masked form like `lev8_live_ab12cd34ef56_****`.
+  </Step>
+  <Step title="Set it as an environment variable">
+    ```bash
+    export LEV8_API_KEY="lev8_live_..."
+    ```
+
+    Add this line to your `~/.zshrc`, `~/.bashrc`, or equivalent so it persists across terminal sessions.
+  </Step>
+</Steps>
 
 <Warning>
-  Treat the complete key as a secret. Store it in a secrets manager or encrypted environment configuration. Never embed it in frontend JavaScript, mobile applications, public repositories, analytics events, or log messages.
+  Treat the complete Token as a secret. Never embed it in frontend JavaScript, mobile applications, public repositories, analytics events, or log messages.
 </Warning>
 
-## HTTP API and MCP
+## Verify your Token
 
-Use the Token directly as `x-api-key` for REST API requests:
+Run a quick credit balance check to confirm the Token works:
 
-```http
-x-api-key: lev8_live_...
+```bash
+curl "https://app.lev8.com/v1/credit/balance" \
+  --header "Authorization: Bearer $LEV8_API_KEY"
 ```
 
-Use the same Token as a Bearer credential for the hosted [MCP endpoint](/mcp-reference):
-
-```http
-Authorization: Bearer lev8_live_...
-```
-
-MCP authentication is request-based and does not open a browser or use OAuth in the first release.
+A successful response returns your `available_credits`. If you get `401`, double-check that the Token is complete and active.
 
 ## Key lifecycle
 
-- Keys belong to the user who created them.
+- Tokens belong to the user who created them.
 - Revocation takes effect immediately. Repeated revocation is safe.
-- Existing keys cannot be recovered from the dashboard; create a replacement and rotate clients instead.
-- API scopes and expiration are currently managed by lev8 and cannot be customized during key creation.
-- Any active key can query its own billing account's [credit balance](/api-reference/credit-balance); [Entity Search](/api-reference/entity-search) and [Contact Search](/api-reference/contact-search) each depend on the key's endpoint scope.
-- The same Token can authenticate the hosted [lev8 MCP endpoint](/mcp-reference) through `Authorization: Bearer`; keep it in the MCP client's environment instead of a Tool argument.
-- Multiple keys for the same user share the same user-level concurrency allowance.
+- Existing Tokens cannot be recovered from the dashboard; create a replacement and rotate clients instead.
+- Multiple Tokens for the same user share the same balance and user-level concurrency allowance.
 
 ## Authentication errors
 
 | Status | Meaning |
 | --- | --- |
-| `401` | The key is missing, malformed, or unknown. |
-| `403` | The key is revoked, expired, or lacks access to the endpoint. |
+| `401` | The Token is missing, malformed, or unknown. |
+| `403` | The Token is revoked, expired, or lacks access to the endpoint. |
 | `500` | The credential service could not complete authentication. |
 
 These responses use the standard [error envelope](/api-reference/errors) and do not expose credential records or dependency details.

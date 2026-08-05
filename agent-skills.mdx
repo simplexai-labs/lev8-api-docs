@@ -3,7 +3,11 @@ title: "Agent Skills"
 description: "Install the Lev8 Agent Skill for your agents."
 ---
 
-Install the Lev8 Agent Skill so your agent can find people, companies, KOLs, Shopify stores, and contact details through the hosted Lev8 MCP endpoint.
+An Agent Skill teaches your coding agent how to use the Lev8 MCP tools without manual configuration. Once installed, the agent knows which tools to call, how to authenticate, and how to handle the async Entity Search workflow — you just describe what you need in natural language.
+
+<Note>
+  If you have already configured [Lev8 MCP](/mcp-reference) manually, you do not need the skill. The skill automates the same setup and adds usage instructions that the agent can reference.
+</Note>
 
 You need an active API Token from [API Tokens](https://app.lev8.com/api-tokens). Set it as the `LEV8_API_KEY` environment variable.
 
@@ -45,6 +49,17 @@ Read the skill definition before installing:
 
 ## Related
 
-- [Lev8 MCP](/mcp-reference)
-- [Entity Search](/api-reference/entity-search)
-- [Contact Search](/api-reference/contact-search)
+<CardGroup cols={2}>
+  <Card title="Lev8 MCP" icon="plug" href="/mcp-reference">
+    Manual MCP setup for Cursor, VS Code, Codex, and more.
+  </Card>
+  <Card title="Entity Search" icon="magnifying-glass" href="/api-reference/entity-search">
+    Review entity types, enrichment fields, and deduplication options.
+  </Card>
+  <Card title="Contact Search" icon="address-book" href="/api-reference/contact-search">
+    Find email addresses or phone numbers.
+  </Card>
+  <Card title="Authentication" icon="key" href="/authentication">
+    Create, store, and rotate API keys.
+  </Card>
+</CardGroup>

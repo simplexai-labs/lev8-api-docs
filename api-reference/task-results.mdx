@@ -1,37 +1,11 @@
 ---
 title: "Task results"
-description: "Create an Entity Search task, monitor progress, and fetch every available result."
+description: "Complete Node.js and Python examples for the Entity Search create-poll-fetch workflow."
 ---
 
-Entity Search separates task creation from result retrieval. This keeps long-running searches independent from a single HTTP connection and lets clients read completed results while discovery continues.
+These examples implement the full [Entity Search](/api-reference/entity-search) lifecycle: create a task, poll status, fetch every result, and handle terminal states. See the [Entity Search reference](/api-reference/entity-search) for field definitions and error codes.
 
-<Steps>
-  <Step title="Create the task">
-    Call [`POST /v1/entity-search/create_task`](/api-reference/entity-search/create-task). `Idempotency-Key` is optional; save the returned key, `leads_search_id`, and `X-Request-Id`.
-  </Step>
-  <Step title="Monitor progress">
-    Call [`GET /v1/entity-search/status`](/api-reference/entity-search/status). `ready_count` is the number of results currently available; `verified_count` includes accepted and rejected candidates.
-  </Step>
-  <Step title="Fetch available results">
-    Call [`GET /v1/entity-search/fetch`](/api-reference/entity-search/fetch) with a positional `pts`. Advance it by the returned `count`, not by the requested page size.
-  </Step>
-  <Step title="Finish locally">
-    Stop after the task reaches `done` or `error` and your next position is at least `ready_count`. An `error` task can still contain billable, readable results.
-  </Step>
-</Steps>
-
-## Task states
-
-| State | Meaning | Client action |
-| --- | --- | --- |
-| `created` | The task was accepted. | Begin polling. |
-| `running` | Discovery or verification is in progress. | Fetch new ready results, then wait before polling again. |
-| `done` | Search completed normally. | Fetch through the final `ready_count`. |
-| `error` | Search stopped with a redacted internal error. | Fetch through the final `ready_count`, then record the task as failed or partial. |
-
-The service also polls active tasks in the background, so clients do not need to poll continuously to keep a task alive. A status request can advance terminal billing settlement when it observes completion.
-
-## Complete Node.js workflow
+## Node.js
 
 This example uses Node.js 18 or later and processes each available result exactly once.
 
@@ -46,7 +20,7 @@ async function lev8Json(path, options = {}) {
     ...options,
     headers: {
       Accept: "application/json",
-      "x-api-key": apiKey,
+      Authorization: `Bearer ${apiKey}`,
       ...options.headers,
     },
   });
@@ -109,7 +83,7 @@ while (true) {
 console.log({ leadsSearchId, terminalStatus, entities });
 ```
 
-## Complete Python workflow
+## Python
 
 Install the asynchronous HTTP client with `python -m pip install httpx`.
 
@@ -127,7 +101,7 @@ API_KEY = os.environ["LEV8_API_KEY"]
 async def lev8_json(client, method, path, **kwargs):
     headers = {
         "Accept": "application/json",
-        "x-api-key": API_KEY,
+        "Authorization": f"Bearer {API_KEY}",
         **kwargs.pop("headers", {}),
     }
     response = await client.request(method, path, headers=headers, **kwargs)

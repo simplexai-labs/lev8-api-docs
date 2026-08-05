@@ -3,7 +3,7 @@ title: "Credits and billing"
 description: "Understand Entity Search reservation, terminal settlement, recovery, and Contact Search charging."
 ---
 
-Entity Search and Contact Search use lev8 credits. Enabled types and prices are configured for each rollout; this documentation does not publish draft or test rates as production prices.
+Entity Search and Contact Search use Lev8 credits. Enabled types and prices are configured for each rollout; this documentation does not publish draft or test rates as production prices.
 
 ## Check available credits
 
@@ -15,22 +15,22 @@ The response does not expose paid, monthly, subscription, or promotional bucket 
 
 <Steps>
   <Step title="Reserve">
-    Before creating the upstream task, lev8 freezes the configured startup fee plus `limit × result unit price`. `enable_web_search` can select a different startup fee. Insufficient balance returns `402 insufficient_credits`.
+    Before creating the upstream task, Lev8 freezes the configured startup fee plus `limit × result unit price`. `enable_web_search` can select a different startup fee. Insufficient balance returns `402 insufficient_credits`.
   </Step>
   <Step title="Run">
-    The task occupies user-level and global active-task capacity until it reaches a terminal state. lev8 continues monitoring it even when the client is disconnected.
+    The task occupies user-level and global active-task capacity until it reaches a terminal state. Lev8 continues monitoring it even when the client is disconnected.
   </Step>
   <Step title="Settle">
     A `done` task charges the startup fee plus `ready_count × result unit price`. An `error` task refunds the startup fee and charges only its `ready_count` results. All unused frozen credits return to their original sources.
   </Step>
   <Step title="Recover">
-    A task with an unknown creation result or no terminal state keeps its reservation temporarily. After the configured recovery period, lev8 refunds it and releases the active-task slot.
+    A task with an unknown creation result or no terminal state keeps its reservation temporarily. After the configured recovery period, Lev8 refunds it and releases the active-task slot.
   </Step>
 </Steps>
 
 Status requests and background processing share the same idempotent terminal settlement behavior. Repeated finalization cannot charge the task twice.
 
-The recovery deadline is fixed when the reservation is created. Status and Fetch calls do not extend it. After the deadline and any in-flight response delivery complete, lev8 refunds an unresolved reservation, releases the active-task slot, and stops exposing the old task results.
+The recovery deadline is fixed when the reservation is created. Status and Fetch calls do not extend it. After the deadline and any in-flight response delivery complete, Lev8 refunds an unresolved reservation, releases the active-task slot, and stops exposing the old task results.
 
 <Note>
   `ready_count` is the billing result count. `verified_count` also includes candidates that were checked and rejected, so it is not used as the charged quantity.
