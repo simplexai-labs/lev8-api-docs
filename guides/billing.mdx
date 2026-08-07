@@ -3,13 +3,42 @@ title: "Credits and billing"
 description: "Understand Entity Search reservation, terminal settlement, recovery, and Contact Search charging."
 ---
 
-Entity Search and Contact Search use Lev8 credits. Enabled types and prices are configured for each rollout; this documentation does not publish draft or test rates as production prices.
+Entity Search and Contact Search use Lev8 credits. The rates below apply to the currently enabled public rollout.
 
 ## Check available credits
 
 Call [`GET /v1/credit/balance`](/api-reference/credit-balance/get-balance) with an active API key. `available_credits` combines all usable sources and excludes credits already reserved by active requests.
 
 The response does not expose paid, monthly, subscription, or promotional bucket details, and it cannot query another user. Responses include `Cache-Control: no-store`.
+
+## Credit charges
+
+### Entity Search
+
+| Entity type | Description | Standard startup | Open web startup | Per result |
+| --- | --- | ---: | ---: | ---: |
+| `company` | Find companies that match an objective. | 5 credits | 20 credits | 2 credits |
+| `person` | Find people that match an objective. | 5 credits | 20 credits | 2 credits |
+| `instagram_creator` | Find Instagram creators. | 5 credits | 20 credits | 10 credits |
+| `twitter_creator` | Find X/Twitter creators. | 5 credits | 20 credits | 10 credits |
+| `youtube_creator` | Find YouTube creators. | 5 credits | 20 credits | 10 credits |
+| `tiktok_creator` | Find TikTok creators. | 5 credits | 20 credits | 10 credits |
+| `shopify_store` | Find Shopify stores. | 5 credits | 20 credits | 2 credits |
+
+The final charge for a completed task is `startup credits + ready_count × per-result credits`. Set `enable_web_search: true` to use the open web startup rate instead of the standard startup rate.
+
+### Contact Search
+
+| Behavior | Description | Credits deducted |
+| --- | --- | ---: |
+| Email found | Returns a non-empty email address in `result.content`. | 10 credits |
+| Phone number found | Returns a non-empty phone number in `result.content`. | 30 credits |
+| No contact found | `result.content` is empty, whitespace, or `null`. | 0 credits |
+| Completed request replayed | Replays the same completed request with the same API key, `Idempotency-Key`, and body. | 0 additional credits |
+
+### Example
+
+Finding 10 companies with standard Entity Search costs `5 + (10 × 2) = 25` credits. Finding one email address for each company costs another `10 × 10 = 100` credits, for a total of `125` credits. If fewer than 10 companies are returned, Entity Search charges only for its final `ready_count`.
 
 ## Entity Search lifecycle
 
