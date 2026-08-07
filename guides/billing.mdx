@@ -25,7 +25,12 @@ The response does not expose paid, monthly, subscription, or promotional bucket 
 | `tiktok_creator` | Find TikTok creators. | 5 credits | 20 credits | 10 credits |
 | `shopify_store` | Find Shopify stores. | 5 credits | 20 credits | 2 credits |
 
-The final charge for a completed task is `startup credits + ready_count × per-result credits`. Set `enable_web_search: true` to use the open web startup rate instead of the standard startup rate.
+The final charge depends on the task's terminal status:
+
+- `done`: `startup credits + ready_count × per-result credits`
+- `error`: `ready_count × per-result credits`; the startup credits are refunded
+
+Set `enable_web_search: true` to use the open web startup rate instead of the standard startup rate.
 
 ### Contact Search
 
