@@ -1,0 +1,70 @@
+---
+title: "Enrich entity"
+description: "Generate structured fields for an entity from context and a JSON Schema."
+openapi: "POST /v1/enrich"
+---
+
+Submits entity context and a JSON Schema. The response returns enrichment data that follows the requested schema when possible.
+
+## Example
+
+```bash
+curl "https://app.lev8.com/v1/enrich" \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
+  --data '{
+    "entity_context": "Company: OpenAI\nWebsite: https://openai.com",
+    "enrich_fields": {
+      "type": "object",
+      "properties": {
+        "company_summary": {"type": "string"},
+        "ceo": {"type": "string"}
+      },
+      "required": ["company_summary", "ceo"]
+    }
+  }'
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "answer": {
+    "company_summary": "OpenAI is an AI research and product company.",
+    "ceo": "Sam Altman"
+  }
+}
+```
+
+If the workflow completes without a generated result, the response can use `success: false`:
+
+```json
+{
+  "success": false,
+  "answer": {
+    "answer": "No result generated from enrich"
+  }
+}
+```
+
+## Generate fields with Pydantic
+
+```python
+from pydantic import BaseModel, Field
+
+
+class CompanyEnrichFields(BaseModel):
+    company_summary: str = Field(description="Company summary")
+    ceo: str = Field(description="Current CEO")
+
+
+entity_context = "Company: OpenAI\nWebsite: https://openai.com"
+enrich_fields = CompanyEnrichFields.model_json_schema()
+
+payload = {
+    "entity_context": entity_context,
+    "enrich_fields": enrich_fields,
+}
+```

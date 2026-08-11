@@ -1,0 +1,65 @@
+---
+title: "Extract"
+description: "Extract social, GitHub, or web page lists synchronously."
+---
+
+[`POST /v1/extract`](/api-reference/extract/run) routes the request by `type` and returns social lists, GitHub lists, or structured lists from web pages.
+
+Use Extract when you need follower, following, stargazer, or contributor lists, or when a web page contains list-like data that should be returned as structured JSON.
+
+## Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `Content-Type: application/json` | Yes | Other media types return `422`. |
+| `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
+| `Authorization` | Yes | `Bearer lev8_live_...` -- an active Lev8 API key with Extract access. |
+
+## Request body
+
+| Field | Type | Required | Default | Description |
+| --- | --- | --- | --- | --- |
+| `type` | string enum | Yes | - | Extraction type. See [supported extraction types](#supported-extraction-types). |
+| `target` | string | Yes | - | Account handle, GitHub repository, repository URL, or web page URL. |
+| `instruction` | string | For `web2list` | - | Describes the list items and fields to extract from a web page. |
+| `limit` | integer | No | `100` | Maximum number of social or GitHub list results. `web2list` ignores this field. |
+
+## Supported extraction types
+
+| `type` | Target format | Example | `instruction` |
+| --- | --- | --- | --- |
+| `x_followers` | X username | `sama` | Not required |
+| `x_following` | X username | `sama` | Not required |
+| `github_user_followers` | GitHub username | `torvalds` | Not required |
+| `github_user_following` | GitHub username | `torvalds` | Not required |
+| `github_repo_stargazers` | `owner/repo` or repo URL | `openai/openai-python` | Not required |
+| `github_repo_contributors` | `owner/repo` or repo URL | `openai/openai-python` | Not required |
+| `ins_followers` | Instagram username | `openai` | Not required |
+| `ins_following` | Instagram username | `openai` | Not required |
+| `tiktok_followers` | TikTok username | `openai` | Not required |
+| `tiktok_following` | TikTok username | `openai` | Not required |
+| `web2list` | Web page URL | `https://www.forbes.com/30-under-30/2026/ai` | Required |
+
+## Response
+
+The response includes `success`, `data`, and `metadata`. Social, GitHub, and `web2list` results return `data` as an array. Business-level failures return `success: false` and a failure reason in `data`.
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "name": "Example Person",
+      "company": "Example Co"
+    }
+  ],
+  "metadata": {
+    "type": "web2list",
+    "target": "https://www.forbes.com/30-under-30/2026/ai",
+    "instruction": "Extract name and company",
+    "limit": 100
+  }
+}
+```
+
+Errors outside the Extract workflow use the standard [error envelope](/api-reference/errors).

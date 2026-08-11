@@ -1,0 +1,86 @@
+---
+title: "Extract data"
+description: "Extract social, GitHub, or web page lists synchronously."
+openapi: "POST /v1/extract"
+---
+
+Submits an extraction request. The `type` selects the extractor, and `target` identifies the account, repository, or web page.
+
+## Example
+
+```bash
+curl "https://app.lev8.com/v1/extract" \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
+  --data '{
+    "type": "x_followers",
+    "target": "sama",
+    "limit": 50
+  }'
+```
+
+```bash
+curl "https://app.lev8.com/v1/extract" \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
+  --data '{
+    "type": "web2list",
+    "target": "https://example.com/directory",
+    "instruction": "Extract company name, website, description, pricing tier",
+    "limit": 20
+  }'
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "username": "example_user"
+    }
+  ],
+  "metadata": {
+    "type": "x_following",
+    "target": "sama",
+    "instruction": null,
+    "limit": 100
+  }
+}
+```
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "name": "Example Person",
+      "company": "Example Co"
+    }
+  ],
+  "metadata": {
+    "type": "web2list",
+    "target": "https://www.forbes.com/30-under-30/2026/ai",
+    "instruction": "Extract name and company",
+    "limit": 100
+  }
+}
+```
+
+If `web2list` is missing `instruction`, the response can use `success: false`:
+
+```json
+{
+  "success": false,
+  "data": "instruction is required for web2list.",
+  "metadata": {
+    "type": "web2list",
+    "target": "https://example.com",
+    "instruction": null,
+    "limit": 100
+  }
+}
+```
