@@ -74,6 +74,27 @@
             ]
           },
           {
+            "group": "Deep Search",
+            "root": "api-reference/deep-search",
+            "pages": [
+              "api-reference/deep-search/run"
+            ]
+          },
+          {
+            "group": "Enrich",
+            "root": "api-reference/enrich",
+            "pages": [
+              "api-reference/enrich/create"
+            ]
+          },
+          {
+            "group": "Extract",
+            "root": "api-reference/extract",
+            "pages": [
+              "api-reference/extract/run"
+            ]
+          },
+          {
             "group": "Credit balance",
             "root": "api-reference/credit-balance",
             "pages": [

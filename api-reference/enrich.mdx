@@ -1,0 +1,39 @@
+---
+title: "Enrich"
+description: "Generate structured fields for an entity from context and a JSON Schema."
+---
+
+[`POST /v1/enrich`](/api-reference/enrich/create) reads `entity_context` and returns structured enrichment fields described by `enrich_fields`.
+
+Use Enrich when you already have an entity and want to fill additional fields such as a company summary, current CEO, category, or other structured attributes.
+
+## Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `Content-Type: application/json` | Yes | Other media types return `422`. |
+| `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
+| `Authorization` | Yes | `Bearer lev8_live_...` -- an active Lev8 API key with Enrich access. |
+
+## Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `entity_context` | string | Yes | Context for the entity, such as name, website, social handles, or an existing description. |
+| `enrich_fields` | object | Yes | JSON Schema object describing the fields to generate. |
+
+## Response
+
+On success, `answer` tries to match the requested `enrich_fields` schema.
+
+```json
+{
+  "success": true,
+  "answer": {
+    "company_summary": "OpenAI is an AI research and product company.",
+    "ceo": "Sam Altman"
+  }
+}
+```
+
+Errors outside the Enrich workflow use the standard [error envelope](/api-reference/errors).

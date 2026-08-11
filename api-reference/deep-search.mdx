@@ -1,0 +1,35 @@
+---
+title: "Deep Search"
+description: "Run a synchronous deep search from a natural-language question."
+---
+
+[`POST /v1/deep-search`](/api-reference/deep-search/run) answers an open-ended research question and returns the generated answer in the same response.
+
+Use Deep Search for research and question answering when the input can be expressed as one natural-language `query`.
+
+## Headers
+
+| Header | Required | Description |
+| --- | --- | --- |
+| `Content-Type: application/json` | Yes | Other media types return `422`. |
+| `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
+| `Authorization` | Yes | `Bearer lev8_live_...` -- an active Lev8 API key with Deep Search access. |
+
+## Request body
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `query` | string | Yes | Natural-language research question. |
+
+## Response
+
+On success, `success` is `true` and `answer` contains the generated answer. A business-level failure can return `success: false` with an explanatory `answer`.
+
+```json
+{
+  "success": true,
+  "answer": "OpenAI is an AI research and product company. Its CEO is Sam Altman."
+}
+```
+
+Errors outside the Deep Search workflow use the standard [error envelope](/api-reference/errors).

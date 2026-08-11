@@ -273,6 +273,150 @@ components:
           type: string
           format: date-time
           example: "2026-07-29T00:00:00Z"
+    DeepSearchRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - query
+      properties:
+        query:
+          type: string
+          minLength: 1
+          description: Natural-language research question to answer with Deep Search.
+          x-default: "What does OpenAI do and who is its CEO?"
+          example: "What does OpenAI do and who is its CEO?"
+    DeepSearchResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        answer:
+          description: Deep Search answer. Successful responses usually return a string; business failures can return an object with an error-style answer message.
+          oneOf:
+            - type: string
+            - type: object
+              additionalProperties: true
+          example: "OpenAI is an AI research and product company. Its CEO is Sam Altman."
+    EnrichRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - entity_context
+        - enrich_fields
+      properties:
+        entity_context:
+          type: string
+          minLength: 1
+          description: Context for the entity to enrich, such as name, website, social handles, or an existing description.
+          x-default: "Company: OpenAI\nWebsite: https://openai.com"
+          example: "Company: OpenAI\nWebsite: https://openai.com"
+        enrich_fields:
+          type: object
+          description: JSON Schema object that describes the fields to generate.
+          additionalProperties: true
+          example:
+            type: object
+            properties:
+              company_summary:
+                type: string
+              ceo:
+                type: string
+            required:
+              - company_summary
+              - ceo
+    EnrichResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        answer:
+          type: object
+          description: Enrichment result. Successful responses try to match the requested `enrich_fields` JSON Schema.
+          additionalProperties: true
+          example:
+            company_summary: OpenAI is an AI research and product company.
+            ceo: Sam Altman
+    ExtractRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - target
+      properties:
+        type:
+          type: string
+          enum:
+            - x_followers
+            - x_following
+            - github_user_followers
+            - github_user_following
+            - github_repo_stargazers
+            - github_repo_contributors
+            - ins_followers
+            - ins_following
+            - tiktok_followers
+            - tiktok_following
+            - web2list
+          description: Extraction type. `web2list` extracts a structured list from a web page; the other values return social or GitHub lists.
+          x-default: web2list
+          example: web2list
+        target:
+          type: string
+          minLength: 1
+          description: Account handle, GitHub repository, repository URL, or web page URL to extract from.
+          x-default: "https://www.forbes.com/30-under-30/2026/ai"
+          example: "https://www.forbes.com/30-under-30/2026/ai"
+        instruction:
+          type:
+            - string
+            - "null"
+          description: Required for `web2list`. Describes the list items and fields to extract.
+          x-default: "Extract all 30 Under 30 names, companies, and positions from the AI category list"
+          example: "Extract all 30 Under 30 names, companies, and positions from the AI category list"
+        limit:
+          type: integer
+          minimum: 1
+          default: 100
+          description: Maximum number of social or GitHub list results. `web2list` ignores this field.
+          x-default: 100
+          example: 20
+    ExtractMetadata:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/ExtractRequest/properties/type"
+        target:
+          type: string
+          example: "https://www.forbes.com/30-under-30/2026/ai"
+        instruction:
+          type:
+            - string
+            - "null"
+          example: "Extract name and company"
+        limit:
+          type: integer
+          example: 100
+    ExtractResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          description: Extracted list data on success, or a failure reason string when `success` is false.
+          oneOf:
+            - type: array
+              items:
+                type: object
+                additionalProperties: true
+            - type: string
+          example:
+            - name: Example Person
+              company: Example Co
+        metadata:
+          $ref: "#/components/schemas/ExtractMetadata"
     CreditBalance:
       type: object
       properties:
@@ -484,6 +628,109 @@ paths:
           description: Server error.
         "503":
           description: Contact Search or pricing is not enabled.
+  /v1/deep-search:
+    post:
+      summary: Run deep search
+      description: Answer a natural-language research question synchronously.
+      operationId: runDeepSearch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeepSearchRequest"
+            example:
+              query: What does OpenAI do and who is its CEO?
+      responses:
+        "200":
+          description: Deep Search answer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeepSearchResponse"
+        "401":
+          description: Missing or invalid API key.
+        "403":
+          description: API key is forbidden or lacks Deep Search access.
+        "422":
+          description: Validation failed.
+        "500":
+          description: Server error.
+        "503":
+          description: Deep Search is not enabled.
+  /v1/enrich:
+    post:
+      summary: Enrich entity
+      description: Generate structured fields for an entity from context and a JSON Schema.
+      operationId: enrichEntity
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnrichRequest"
+            example:
+              entity_context: "Company: OpenAI\nWebsite: https://openai.com"
+              enrich_fields:
+                type: object
+                properties:
+                  company_summary:
+                    type: string
+                  ceo:
+                    type: string
+                required:
+                  - company_summary
+                  - ceo
+      responses:
+        "200":
+          description: Enrichment result.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnrichResponse"
+        "401":
+          description: Missing or invalid API key.
+        "403":
+          description: API key is forbidden or lacks Enrich access.
+        "422":
+          description: Validation failed.
+        "500":
+          description: Server error.
+        "503":
+          description: Enrich is not enabled.
+  /v1/extract:
+    post:
+      summary: Extract data
+      description: Extract social, GitHub, or web page lists synchronously.
+      operationId: extractData
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExtractRequest"
+            example:
+              type: web2list
+              target: "https://www.forbes.com/30-under-30/2026/ai"
+              instruction: Extract all 30 Under 30 names, companies, and positions from the AI category list
+              limit: 20
+      responses:
+        "200":
+          description: Extracted data.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExtractResponse"
+        "401":
+          description: Missing or invalid API key.
+        "403":
+          description: API key is forbidden or lacks Extract access.
+        "422":
+          description: Validation failed.
+        "500":
+          description: Server error.
+        "503":
+          description: Extract is not enabled.
   /v1/credit/balance:
     get:
       summary: Get balance

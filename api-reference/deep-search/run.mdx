@@ -1,0 +1,39 @@
+---
+title: "Run deep search"
+description: "Answer a natural-language research question synchronously."
+openapi: "POST /v1/deep-search"
+---
+
+Submits a Deep Search query and returns the generated answer in the same request.
+
+## Example
+
+```bash
+curl "https://app.lev8.com/v1/deep-search" \
+  --request POST \
+  --header "Content-Type: application/json" \
+  --header "Authorization: Bearer $LEV8_API_KEY" \
+  --data '{
+    "query": "What does OpenAI do and who is its CEO?"
+  }'
+```
+
+## Response
+
+```json
+{
+  "success": true,
+  "answer": "OpenAI is an AI research and product company. Its CEO is Sam Altman."
+}
+```
+
+If the workflow completes without a generated result, the response can use `success: false`:
+
+```json
+{
+  "success": false,
+  "answer": {
+    "answer": "No result generated from deep search"
+  }
+}
+```
