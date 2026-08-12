@@ -36,4 +36,14 @@ On success, `answer` tries to match the requested `enrich_fields` schema.
 }
 ```
 
+## Billing
+
+| Type | Description | Credits deducted |
+| --- | --- | ---: |
+| Enrich | Generates structured fields for an entity. | 2 credits / successful request |
+
+The price does not depend on the number of properties in `enrich_fields`. Requests with `success: false` are not charged.
+
+See [Credits and billing](/guides/billing) for all API rates.
+
 Errors outside the Enrich workflow use the standard [error envelope](/api-reference/errors).

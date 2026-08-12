@@ -1,9 +1,9 @@
 ---
 title: "Credits and billing"
-description: "Understand Entity Search reservation, terminal settlement, recovery, and Contact Search charging."
+description: "Understand credit rates and charging behavior across Lev8 APIs."
 ---
 
-Entity Search and Contact Search use Lev8 credits. The rates below apply to the currently enabled public rollout.
+Lev8 APIs use a shared credit balance. The rates below apply to the currently enabled public rollout.
 
 ## Check available credits
 
@@ -41,9 +41,45 @@ Set `enable_web_search: true` to use the open web startup rate instead of the st
 | No contact found | `result.content` is empty, whitespace, or `null`. | 0 credits |
 | Completed request replayed | Replays the same completed request with the same API key, `Idempotency-Key`, and body. | 0 additional credits |
 
+### Deep Search
+
+| Type | Description | Credits deducted |
+| --- | --- | ---: |
+| Deep Search | Answers an open-ended research question. | 2 credits / successful request |
+
+Requests with `success: false` are not charged.
+
+### Enrich
+
+| Type | Description | Credits deducted |
+| --- | --- | ---: |
+| Enrich | Generates structured fields for an entity. | 2 credits / successful request |
+
+The price does not depend on the number of properties in `enrich_fields`. Requests with `success: false` are not charged.
+
+### Extract
+
+| Type | Description | Credits deducted |
+| --- | --- | ---: |
+| `x_followers` | Returns the followers of an X account. | 1 credit / 5 results |
+| `x_following` | Returns the accounts followed by an X account. | 1 credit / 5 results |
+| `github_user_followers` | Returns the followers of a GitHub user. | 1 credit / 5 results |
+| `github_user_following` | Returns the accounts followed by a GitHub user. | 1 credit / 5 results |
+| `github_repo_stargazers` | Returns the stargazers of a GitHub repository. | 1 credit / 5 results |
+| `github_repo_contributors` | Returns the contributors to a GitHub repository. | 1 credit / 5 results |
+| `ins_followers` | Returns the followers of an Instagram account. | 1 credit / 5 results |
+| `ins_following` | Returns the accounts followed by an Instagram account. | 1 credit / 5 results |
+| `tiktok_followers` | Returns the followers of a TikTok account. | 1 credit / 5 results |
+| `tiktok_following` | Returns the accounts followed by a TikTok account. | 1 credit / 5 results |
+| `web2list` | Extracts a structured list from a web page. | 80 credits / successful request |
+
+Social and GitHub list results are billed in groups of 5. A partial group is charged as a full group, so 1 to 5 results cost 1 credit, 6 to 10 cost 2 credits, and 100 cost 20 credits. Requests with `success: false` are not charged.
+
 ### Example
 
 Finding 10 companies with standard Entity Search costs `5 + (10 × 2) = 25` credits. Finding one email address for each company costs another `10 × 10 = 100` credits, for a total of `125` credits. If fewer than 10 companies are returned, Entity Search charges only for its final `ready_count`.
+
+A successful Deep Search request and a successful Enrich request cost 2 credits each. Extracting 23 social or GitHub list results is billed as five groups and costs 5 credits, while one successful `web2list` request costs 80 credits.
 
 ## Entity Search lifecycle
 

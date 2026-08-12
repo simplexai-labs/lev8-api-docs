@@ -32,4 +32,14 @@ On success, `success` is `true` and `answer` contains the generated answer. A bu
 }
 ```
 
+## Billing
+
+| Type | Description | Credits deducted |
+| --- | --- | ---: |
+| Deep Search | Answers an open-ended research question. | 2 credits / successful request |
+
+Requests with `success: false` are not charged.
+
+See [Credits and billing](/guides/billing) for all API rates.
+
 Errors outside the Deep Search workflow use the standard [error envelope](/api-reference/errors).
