@@ -62,4 +62,22 @@ The response includes `success`, `data`, and `metadata`. Social, GitHub, and `we
 }
 ```
 
+## Billing
+
+| Type | Description | Credits deducted |
+| --- | --- | ---: |
+| `x_followers` | Returns the followers of an X account. | 1 credit / 5 results |
+| `x_following` | Returns the accounts followed by an X account. | 1 credit / 5 results |
+| `github_user_followers` | Returns the followers of a GitHub user. | 1 credit / 5 results |
+| `github_user_following` | Returns the accounts followed by a GitHub user. | 1 credit / 5 results |
+| `github_repo_stargazers` | Returns the stargazers of a GitHub repository. | 1 credit / 5 results |
+| `github_repo_contributors` | Returns the contributors to a GitHub repository. | 1 credit / 5 results |
+| `ins_followers` | Returns the followers of an Instagram account. | 1 credit / 5 results |
+| `ins_following` | Returns the accounts followed by an Instagram account. | 1 credit / 5 results |
+| `tiktok_followers` | Returns the followers of a TikTok account. | 1 credit / 5 results |
+| `tiktok_following` | Returns the accounts followed by a TikTok account. | 1 credit / 5 results |
+| `web2list` | Extracts a structured list from a web page. | 80 credits / successful request |
+
+Social and GitHub list results are billed in groups of 5. A partial group is charged as a full group, so 1 to 5 results cost 1 credit and 6 to 10 cost 2 credits. Requests with `success: false` are not charged. See [Credits and billing](/guides/billing) for more examples.
+
 Errors outside the Extract workflow use the standard [error envelope](/api-reference/errors).
