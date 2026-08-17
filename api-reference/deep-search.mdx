@@ -14,22 +14,30 @@ Use Deep Search for research and question answering when the input can be expres
 | `Content-Type: application/json` | Yes | Other media types return `422`. |
 | `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
 | `Authorization` | Yes | `Bearer lev8_live_...` -- an active Lev8 API key with Deep Search access. |
+| `Idempotency-Key` | No | Stable key for safely replaying the same logical request. Lev8 generates and returns one when omitted. |
 
 ## Request body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `query` | string | Yes | Natural-language research question. |
+| `query` | string | Yes | Natural-language research question, from 1 to 4,000 characters after trimming. |
 
 ## Response
 
-On success, `success` is `true` and `answer` contains the generated answer. A business-level failure can return `success: false` with an explanatory `answer`.
+On success, `success` is `true` and `answer` contains the generated answer as any non-null JSON value. Lev8 passes this value through without converting it or enforcing a fixed string or object shape.
+
+The current search service commonly returns an object with `Result` for the generated response and `Citations` for source attribution. Treat those fields as an example of the current upstream format, not as a stable schema guaranteed by the Lev8 API.
 
 ```json
 {
   "success": true,
-  "answer": "OpenAI is an AI research and product company. Its CEO is Sam Altman."
+  "answer": {
+    "Citations": [],
+    "Result": "OpenAI is an AI research and product company. Its CEO is Sam Altman."
+  }
 }
 ```
+
+A business-level failure can return `success: false` with a non-null explanatory `answer`. Missing or `null` answers are treated as upstream protocol failures and returned through the standard error envelope.
 
 Errors outside the Deep Search workflow use the standard [error envelope](/api-reference/errors).

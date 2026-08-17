@@ -1,10 +1,10 @@
 ---
 title: "Lev8 API"
-description: "Search for entities and contact details from your application or AI client."
+description: "Search, research, enrich, and extract structured data from your application or AI client."
 sidebarTitle: "Overview"
 ---
 
-The Lev8 API turns a natural-language objective into matching entities or a requested contact detail. Use the HTTP API from server-side products, or connect an AI client through the hosted MCP endpoint.
+The Lev8 API turns natural-language objectives into matching entities, contact details, researched answers, enriched records, or extracted public lists. Use the HTTP API from server-side products, or connect an AI client through the hosted MCP endpoint.
 
 ## Start with Entity Search
 
@@ -37,6 +37,15 @@ The response includes a `leads_search_id`. Use it with `GET /v1/entity-search/st
   <Card title="Contact Search" icon="address-book" href="/api-reference/contact-search">
     Find an email address or phone number with a JSON request.
   </Card>
+  <Card title="Deep Search" icon="search" href="/api-reference/deep-search">
+    Answer an open-ended research question synchronously.
+  </Card>
+  <Card title="Enrich" icon="sparkles" href="/api-reference/enrich">
+    Generate schema-driven fields for an existing entity.
+  </Card>
+  <Card title="Extract" icon="list" href="/api-reference/extract">
+    Extract social, GitHub, or public web-page lists.
+  </Card>
   <Card title="MCP server" icon="plug" href="/mcp-reference">
     Connect an AI client to typed Lev8 tools over Streamable HTTP.
   </Card>
@@ -51,6 +60,9 @@ The response includes a `leads_search_id`. Use it with `GET /v1/entity-search/st
 | --- | --- | --- |
 | Entity Search | `POST /v1/entity-search/create_task` | Asynchronous. Create a task, poll status, fetch results by position. |
 | Contact Search | `POST /v1/contact-search` | Synchronous. Returns one email or phone lookup. Charged only on a non-empty result. |
+| Deep Search | `POST /v1/deep-search` | Synchronous. Returns a dynamic, non-null JSON answer to a research question. |
+| Enrich | `POST /v1/enrich` | Synchronous. Generates an object from entity context and a caller-provided JSON Schema. |
+| Extract | `POST /v1/extract` | Synchronous. Returns social, GitHub, or public web-page list data. |
 | Credit balance | `GET /v1/credit/balance` | Returns available credits, excluding in-progress reservations. |
 
 Authentication uses an `Authorization: Bearer` header. Entity Search reserves credits up front and settles against `ready_count` when the task completes. Idempotent replays return existing results without duplicate billing. The hosted [MCP endpoint](/mcp-reference) calls the same API and does not bypass scopes, concurrency, or billing.

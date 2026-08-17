@@ -32,10 +32,11 @@ What to do:
 3. Check whether LEV8_API_KEY is available without printing the value:
    printf '%s\n' "${LEV8_API_KEY:+api-key-set}"
 4. If not set, ask me to create a Token in https://app.lev8.com/api-tokens and set it in my own shell.
-5. Configure https://api.lev8.com/mcp with Bearer authentication from LEV8_API_KEY.
+5. Configure https://app.lev8.com/mcp with Bearer authentication from LEV8_API_KEY.
 6. To find people, companies, KOLs, or Shopify stores, use entity_search_create, entity_search_status, then entity_search_fetch.
 7. To find contact details, use contact_search.
-8. Tell me how to restart or rescan this agent so it discovers the skill.
+8. Use deep_search for open-ended research, enrich for schema-driven entity fields, and extract for social, GitHub, or public web-page lists.
+9. Tell me how to restart or rescan this agent so it discovers the skill.
 
 Hard rule:
 - Never echo, cat, grep, paste, or log a complete lev8 Token.
@@ -58,6 +59,15 @@ Read the skill definition before installing:
   </Card>
   <Card title="Contact Search" icon="address-book" href="/api-reference/contact-search">
     Find email addresses or phone numbers.
+  </Card>
+  <Card title="Deep Search" icon="search" href="/api-reference/deep-search">
+    Answer open-ended research questions.
+  </Card>
+  <Card title="Enrich" icon="sparkles" href="/api-reference/enrich">
+    Generate structured fields for an entity.
+  </Card>
+  <Card title="Extract" icon="list" href="/api-reference/extract">
+    Extract social, GitHub, and public web-page lists.
   </Card>
   <Card title="Authentication" icon="key" href="/authentication">
     Create, store, and rotate API keys.

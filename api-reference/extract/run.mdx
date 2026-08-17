@@ -44,10 +44,10 @@ curl "https://app.lev8.com/v1/extract" \
     }
   ],
   "metadata": {
-    "type": "x_following",
+    "type": "x_followers",
     "target": "sama",
     "instruction": null,
-    "limit": 100
+    "limit": 50
   }
 }
 ```
@@ -63,24 +63,11 @@ curl "https://app.lev8.com/v1/extract" \
   ],
   "metadata": {
     "type": "web2list",
-    "target": "https://www.forbes.com/30-under-30/2026/ai",
-    "instruction": "Extract name and company",
+    "target": "https://example.com/directory",
+    "instruction": "Extract company name, website, description, pricing tier",
     "limit": 100
   }
 }
 ```
 
-If `web2list` is missing `instruction`, the response can use `success: false`:
-
-```json
-{
-  "success": false,
-  "data": "instruction is required for web2list.",
-  "metadata": {
-    "type": "web2list",
-    "target": "https://example.com",
-    "instruction": null,
-    "limit": 100
-  }
-}
-```
+For `web2list`, Lev8 requires `instruction`, accepts only a public HTTP or HTTPS URL in `target`, and always returns a normalized `metadata.limit` of `100`. Invalid input returns `422` through the standard error envelope before the extraction workflow starts.

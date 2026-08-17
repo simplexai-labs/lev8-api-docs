@@ -1,15 +1,15 @@
 ---
 name: lev8-api
-description: Find people, companies, KOLs/creators, Shopify stores, and contact details through hosted Lev8 MCP tools.
+description: Search entities and contacts, research questions, enrich records, and extract public lists through hosted Lev8 MCP tools.
 ---
 
 # Lev8 MCP
 
-Use this skill when a user asks to configure the hosted Lev8 MCP endpoint, find people, find companies, find KOLs or creators, find Shopify stores, or find contact details through MCP tools.
+Use this skill when a user asks to configure the hosted Lev8 MCP endpoint, find people, companies, creators, Shopify stores, or contact details, answer research questions, enrich an entity, or extract social, GitHub, or public web-page lists.
 
 ## Authentication
 
-- Hosted MCP endpoint: `https://api.lev8.com/mcp`
+- Hosted MCP endpoint: `https://app.lev8.com/mcp`
 - Use `LEV8_API_KEY` for MCP Bearer authentication.
 - Never print, echo, cat, grep with output, paste, or log a complete lev8 Token.
 
@@ -27,6 +27,18 @@ Continue fetching with the next `pts = pts + count`. Finish only when task statu
 
 Use `contact_search` to find one email or phone number. Put identity signals in `objective` when available.
 
+## Deep Search
+
+Use `deep_search` for an open-ended research question. Treat `answer` as dynamic, non-null JSON: pass it through or inspect it at runtime instead of requiring a string or fixed object fields.
+
+## Enrich
+
+Use `enrich` when the user already has entity context and wants structured fields. Supply a non-empty object JSON Schema in `enrich_fields` and interpret `answer` using that caller-provided schema.
+
+## Extract
+
+Use `extract` for supported social or GitHub lists, or use `type: web2list` with an instruction and public HTTP or HTTPS URL. Social and GitHub limits default to 100 and may be at most 10000; web2list normalizes the limit to 100.
+
 ## Credit Balance
 
 Use `credit_balance` when the user asks to check available credits. Print only non-sensitive response fields.
@@ -37,7 +49,7 @@ Configure the hosted MCP endpoint with Bearer authentication. The Token is trans
 
 ```bash
 codex mcp add lev8 \
-  --url https://api.lev8.com/mcp \
+  --url https://app.lev8.com/mcp \
   --bearer-token-env-var LEV8_API_KEY
 ```
 
@@ -45,5 +57,8 @@ codex mcp add lev8 \
 
 - `/api-reference/entity-search`
 - `/api-reference/contact-search`
+- `/api-reference/deep-search`
+- `/api-reference/enrich`
+- `/api-reference/extract`
 - `/api-reference/credit-balance`
 - `/mcp-reference`

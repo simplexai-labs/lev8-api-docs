@@ -23,9 +23,14 @@ curl "https://app.lev8.com/v1/deep-search" \
 ```json
 {
   "success": true,
-  "answer": "OpenAI is an AI research and product company. Its CEO is Sam Altman."
+  "answer": {
+    "Citations": [],
+    "Result": "OpenAI is an AI research and product company. Its CEO is Sam Altman."
+  }
 }
 ```
+
+`answer` can be any non-null JSON value. The object above reflects the current upstream format, but clients should pass through or inspect the value dynamically instead of requiring `Citations`, `Result`, or a string.
 
 If the workflow completes without a generated result, the response can use `success: false`:
 

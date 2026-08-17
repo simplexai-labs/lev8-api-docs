@@ -14,13 +14,14 @@ Use Enrich when you already have an entity and want to fill additional fields su
 | `Content-Type: application/json` | Yes | Other media types return `422`. |
 | `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
 | `Authorization` | Yes | `Bearer lev8_live_...` -- an active Lev8 API key with Enrich access. |
+| `Idempotency-Key` | No | Stable key for safely replaying the same logical request. Lev8 generates and returns one when omitted. |
 
 ## Request body
 
 | Field | Type | Required | Description |
 | --- | --- | --- | --- |
-| `entity_context` | string | Yes | Context for the entity, such as name, website, social handles, or an existing description. |
-| `enrich_fields` | object | Yes | JSON Schema object describing the fields to generate. |
+| `entity_context` | string | Yes | Context for the entity, such as name, website, social handles, or an existing description. Maximum 16 KiB after trimming. |
+| `enrich_fields` | object | Yes | Non-empty object JSON Schema describing the fields to generate. Maximum 256 KiB, 12 levels, and 200 properties. |
 
 ## Response
 
