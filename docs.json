@@ -2,7 +2,7 @@
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
   "name": "Lev8 API",
-  "description": "Search for entities and contact details from your application.",
+  "description": "Search, research, enrich, and extract structured data from your application.",
   "api": {
     "openapi": [
       "openapi.yaml"

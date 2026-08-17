@@ -1,9 +1,9 @@
 ---
 title: "Credits and billing"
-description: "Understand Entity Search reservation, terminal settlement, recovery, and Contact Search charging."
+description: "Understand reservation and settlement across Lev8 search, enrichment, and extraction APIs."
 ---
 
-Entity Search and Contact Search use Lev8 credits. The rates below apply to the currently enabled public rollout.
+Entity Search, Contact Search, Deep Search, Enrich, and Extract use Lev8 credits. The rates below apply to the currently enabled public rollout.
 
 ## Check available credits
 
@@ -41,6 +41,23 @@ Set `enable_web_search: true` to use the open web startup rate instead of the st
 | No contact found | `result.content` is empty, whitespace, or `null`. | 0 credits |
 | Completed request replayed | Replays the same completed request with the same API key, `Idempotency-Key`, and body. | 0 additional credits |
 
+### Deep Search and Enrich
+
+| Operation | Successful workflow | Business-level failure |
+| --- | ---: | ---: |
+| Deep Search | 2 credits when `success` is `true` | 0 credits when `success` is `false` |
+| Enrich | 2 credits when `success` is `true` | 0 credits when `success` is `false` |
+
+### Extract
+
+| Operation | Credits deducted |
+| --- | ---: |
+| Social or GitHub extraction | 1 credit per five returned items, rounded up |
+| `web2list` with `success: true` | 80 credits |
+| Extract with `success: false` | 0 credits |
+
+For social and GitHub extraction, Lev8 reserves the maximum cost from `limit` before calling the upstream service, then settles from the number of successfully returned items. `web2list` reserves its fixed 80-credit price.
+
 ### Example
 
 Finding 10 companies with standard Entity Search costs `5 + (10 × 2) = 25` credits. Finding one email address for each company costs another `10 × 10 = 100` credits, for a total of `125` credits. If fewer than 10 companies are returned, Entity Search charges only for its final `ready_count`.
@@ -76,11 +93,18 @@ Contact Search freezes the configured email or phone price before calling the se
 
 The successful response and settlement are saved together. Replaying the same API key, `Idempotency-Key`, and body returns the saved JSON without another upstream request or charge.
 
+## Synchronous workflow settlement
+
+Deep Search, Enrich, and Extract also save a successful response and settle credits together. A replay with the same API key, `Idempotency-Key`, and request body returns that saved response without another upstream call or charge.
+
+These APIs use request-duration concurrency leases rather than Entity Search task slots. A timeout or lost response does not prove that the operation failed, so preserve the original idempotency key when retrying.
+
 ## Important boundaries
 
 - Billing is recorded transactionally and does not depend on asynchronous message delivery.
 - Multiple API keys owned by the same user share the same balance and user-level concurrency limit.
 - Entity Search concurrency counts active asynchronous tasks, not HTTP connections. Status and Fetch do not consume new slots.
+- Contact Search, Deep Search, Enrich, and Extract use synchronous request concurrency limits.
 - An Entity task with terminal `error` can still contain charged, readable results.
 - Upstream failures and internal details are redacted from public responses.
 - Pricing is supplied separately for each enabled rollout.

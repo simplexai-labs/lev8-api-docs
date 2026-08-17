@@ -3,10 +3,10 @@ title: "Lev8 MCP"
 description: "Connect Codex, Claude Code, Gemini CLI, Cursor, VS Code, and other AI clients to Lev8 search tools."
 ---
 
-Lev8 MCP lets your AI assistant search companies, find contacts, and manage credits through one hosted endpoint. There is no local server, executable, or package to install.
+Lev8 MCP lets your AI assistant search entities and contacts, answer research questions, enrich records, extract public lists, and manage credits through one hosted endpoint. There is no local server, executable, or package to install.
 
 ```text
-https://api.lev8.com/mcp
+https://app.lev8.com/mcp
 ```
 
 [Create an API Token](/authentication) and set it as an environment variable, then click to install:
@@ -19,14 +19,14 @@ export LEV8_API_KEY="lev8_live_..."
   <Card
     title="Add to Cursor"
     icon="download"
-    href="cursor://anysphere.cursor-deeplink/mcp/install?name=lev8&config=eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vYXBpLmxldjguY29tL21jcCIsImhlYWRlcnMiOnsiQXV0aG9yaXphdGlvbiI6IkJlYXJlciAke2VudjpMRVY4X0FQSV9LRVl9In19"
+    href="cursor://anysphere.cursor-deeplink/mcp/install?name=lev8&config=eyJ0eXBlIjoiaHR0cCIsInVybCI6Imh0dHBzOi8vYXBwLmxldjguY29tL21jcCIsImhlYWRlcnMiOnsiQXV0aG9yaXphdGlvbiI6IkJlYXJlciAke2VudjpMRVY4X0FQSV9LRVl9In19"
   >
     Installs the config. Cursor reads `LEV8_API_KEY` from your environment at runtime.
   </Card>
   <Card
     title="Add to VS Code"
     icon="download"
-    href="https://vscode.dev/redirect/mcp/install?name=lev8&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fapi.lev8.com%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Alev8-token%7D%22%7D%7D"
+    href="https://vscode.dev/redirect/mcp/install?name=lev8&config=%7B%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fapp.lev8.com%2Fmcp%22%2C%22headers%22%3A%7B%22Authorization%22%3A%22Bearer%20%24%7Binput%3Alev8-token%7D%22%7D%7D"
   >
     Installs the config. VS Code prompts for the Token on first connection.
   </Card>
@@ -46,7 +46,7 @@ If you haven't created a Token yet, follow the [Authentication](/authentication)
     export LEV8_API_KEY="lev8_live_..."
 
     codex mcp add lev8 \
-      --url https://api.lev8.com/mcp \
+      --url https://app.lev8.com/mcp \
       --bearer-token-env-var LEV8_API_KEY
     ```
 
@@ -58,7 +58,7 @@ If you haven't created a Token yet, follow the [Authentication](/authentication)
     export LEV8_API_KEY="lev8_live_..."
 
     claude mcp add-json --scope user lev8 \
-      '{"type":"http","url":"https://api.lev8.com/mcp","headers":{"Authorization":"Bearer ${LEV8_API_KEY}"}}'
+      '{"type":"http","url":"https://app.lev8.com/mcp","headers":{"Authorization":"Bearer ${LEV8_API_KEY}"}}'
     ```
 
     The single quotes preserve `${LEV8_API_KEY}` for Claude Code to resolve when it connects. Run `claude mcp get lev8` to inspect the saved configuration, then use `/mcp` inside Claude Code to check the connection.
@@ -70,14 +70,14 @@ If you haven't created a Token yet, follow the [Authentication](/authentication)
 
     gemini mcp add --scope user --transport http \
       --header "Authorization: Bearer ${LEV8_API_KEY}" \
-      lev8 https://api.lev8.com/mcp
+      lev8 https://app.lev8.com/mcp
     ```
 
     Run `gemini mcp list` to check the connection. Gemini CLI expands the environment variable when the command runs and saves the resulting header in your private user settings, so do not share that file.
   </Tab>
 
   <Tab title="Other">
-    Lev8 MCP works with any client that supports remote Streamable HTTP servers. Point the client at `https://api.lev8.com/mcp` and send the Token in the `Authorization` header:
+    Lev8 MCP works with any client that supports remote Streamable HTTP servers. Point the client at `https://app.lev8.com/mcp` and send the Token in the `Authorization` header:
 
     ```http
     Authorization: Bearer lev8_live_...
@@ -100,7 +100,7 @@ If you haven't created a Token yet, follow the [Authentication](/authentication)
       "mcpServers": {
         "lev8": {
           "type": "http",
-          "url": "https://api.lev8.com/mcp",
+          "url": "https://app.lev8.com/mcp",
           "headers": {
             "Authorization": "Bearer YOUR_LEV8_API_KEY"
           }
@@ -115,15 +115,16 @@ If you haven't created a Token yet, follow the [Authentication](/authentication)
 
 ## Available Tools
 
-| Tool | Description |
-| --- | --- |
-| `entity_search_create` | Create a billed asynchronous search for companies, people, creators, or Shopify stores. |
-| `entity_search_status` | Check the progress of an entity search task. |
-| `entity_search_fetch` | Read one page of results from a completed or in-progress search. |
-| `contact_search` | Find an email or phone number. Only a non-empty result is charged. |
-| `credit_balance` | Read the available credits for your billing account. |
+- **`entity_search_create`**: Create a billed asynchronous search for companies, people, creators, or Shopify stores.
+- **`entity_search_status`**: Check the progress of an entity search task.
+- **`entity_search_fetch`**: Read one page of results from a completed or in-progress search.
+- **`contact_search`**: Find an email or phone number. Only a non-empty result is charged.
+- **`deep_search`**: Answer an open-ended research question synchronously.
+- **`enrich`**: Generate structured fields from entity context and a caller-provided JSON Schema.
+- **`extract`**: Extract social, GitHub, or public web-page lists synchronously.
+- **`credit_balance`**: Read the available credits for your billing account.
 
-See the [Entity Search](/api-reference/entity-search), [Contact Search](/api-reference/contact-search), and [Credit balance](/api-reference/credit-balance) API references for full parameter details.
+See the [Entity Search](/api-reference/entity-search), [Contact Search](/api-reference/contact-search), [Deep Search](/api-reference/deep-search), [Enrich](/api-reference/enrich), [Extract](/api-reference/extract), and [Credit balance](/api-reference/credit-balance) API references for full parameter details.
 
 ## Try it
 
@@ -145,6 +146,30 @@ After the Tools appear in your client, ask it to use Lev8 in natural language:
   ```
 
   Calls `contact_search` and returns the result directly.
+
+  **Research a question**
+
+  ```text
+  Use Lev8 Deep Search to explain who founded Mercury and distinguish the companies that share that name.
+  ```
+
+  Calls `deep_search`. Its `answer` is a dynamic, non-null JSON value and may include a generated result plus citations.
+
+  **Enrich an entity**
+
+  ```text
+  Use Lev8 to enrich this company record with a summary and current CEO: Company: OpenAI, Website: https://openai.com.
+  ```
+
+  Calls `enrich` with an object JSON Schema for the requested fields.
+
+  **Extract a public list**
+
+  ```text
+  Use Lev8 to extract company names and websites from https://example.com/directory.
+  ```
+
+  Calls `extract` with `type: web2list`, the public URL, and an extraction instruction.
 
   **Check credits**
 
@@ -189,11 +214,17 @@ Contact Search is synchronous and returns the result in a single call.
 
 Only a non-empty result is charged. If no contact is found, no credits are deducted.
 
+## Synchronous tools
+
+`deep_search`, `enrich`, and `extract` each return a result in one Tool call. Deep Search passes through its `answer` as dynamic JSON; do not assume it is always a string or that an object has fixed fields. Enrich returns an object shaped by the supplied JSON Schema. Extract returns an array on success and a failure-reason string when `success` is `false`.
+
+For `web2list`, `extract` requires an instruction and a public HTTP or HTTPS URL. Social and GitHub extraction limits default to `100` and can be at most `10000`; `web2list` normalizes the limit to `100`.
+
 ## Billing and retries
 
 Every Tool call goes through the Lev8 API, so [Token scopes](/authentication), [credit billing](/guides/billing), and [idempotency handling](/guides/idempotency) still apply.
 
-The MCP server generates an internal idempotency key for every `entity_search_create` and `contact_search` call. That key is not exposed as a Tool input.
+The MCP server generates an internal idempotency key for every paid POST Tool: `entity_search_create`, `contact_search`, `deep_search`, `enrich`, and `extract`. That key is not exposed as a Tool input.
 
 <Warning>
   The first release does not automatically retry paid operations. Calling the Tool again creates a new key and is treated as a new billable operation. Do not repeat a call whose outcome is unknown.
@@ -251,5 +282,14 @@ The MCP server generates an internal idempotency key for every `entity_search_cr
   </Card>
   <Card title="Contact Search" icon="address-book" href="/api-reference/contact-search">
     Find email addresses or phone numbers.
+  </Card>
+  <Card title="Deep Search" icon="search" href="/api-reference/deep-search">
+    Answer open-ended research questions.
+  </Card>
+  <Card title="Enrich" icon="sparkles" href="/api-reference/enrich">
+    Generate structured fields for an entity.
+  </Card>
+  <Card title="Extract" icon="list" href="/api-reference/extract">
+    Extract social, GitHub, and public web-page lists.
   </Card>
 </CardGroup>

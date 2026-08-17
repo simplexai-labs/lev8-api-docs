@@ -282,22 +282,31 @@ components:
         query:
           type: string
           minLength: 1
+          maxLength: 4000
           description: Natural-language research question to answer with Deep Search.
           x-default: "What does OpenAI do and who is its CEO?"
           example: "What does OpenAI do and who is its CEO?"
     DeepSearchResponse:
       type: object
+      additionalProperties: false
+      required:
+        - success
+        - answer
       properties:
         success:
           type: boolean
           example: true
         answer:
-          description: Deep Search answer. Successful responses usually return a string; business failures can return an object with an error-style answer message.
-          oneOf:
-            - type: string
-            - type: object
-              additionalProperties: true
-          example: "OpenAI is an AI research and product company. Its CEO is Sam Altman."
+          description: Any non-null JSON value returned by Deep Search. Clients must not assume a fixed string or object shape.
+          type:
+            - object
+            - array
+            - string
+            - number
+            - boolean
+          example:
+            Citations: []
+            Result: OpenAI is an AI research and product company. Its CEO is Sam Altman.
     EnrichRequest:
       type: object
       additionalProperties: false
@@ -308,12 +317,23 @@ components:
         entity_context:
           type: string
           minLength: 1
-          description: Context for the entity to enrich, such as name, website, social handles, or an existing description.
+          description: Context for the entity to enrich, such as name, website, social handles, or an existing description. Maximum 16 KiB after trimming.
           x-default: "Company: OpenAI\nWebsite: https://openai.com"
           example: "Company: OpenAI\nWebsite: https://openai.com"
         enrich_fields:
           type: object
-          description: JSON Schema object that describes the fields to generate.
+          required:
+            - type
+            - properties
+          properties:
+            type:
+              type: string
+              const: object
+            properties:
+              type: object
+              minProperties: 1
+              additionalProperties: true
+          description: Object JSON Schema that describes the fields to generate. Maximum 256 KiB, 12 levels, and 200 cumulative properties.
           additionalProperties: true
           example:
             type: object
@@ -327,6 +347,10 @@ components:
               - ceo
     EnrichResponse:
       type: object
+      additionalProperties: false
+      required:
+        - success
+        - answer
       properties:
         success:
           type: boolean
@@ -365,6 +389,7 @@ components:
         target:
           type: string
           minLength: 1
+          maxLength: 2048
           description: Account handle, GitHub repository, repository URL, or web page URL to extract from.
           x-default: "https://www.forbes.com/30-under-30/2026/ai"
           example: "https://www.forbes.com/30-under-30/2026/ai"
@@ -372,12 +397,14 @@ components:
           type:
             - string
             - "null"
+          maxLength: 4000
           description: Required for `web2list`. Describes the list items and fields to extract.
           x-default: "Extract all 30 Under 30 names, companies, and positions from the AI category list"
           example: "Extract all 30 Under 30 names, companies, and positions from the AI category list"
         limit:
           type: integer
           minimum: 1
+          maximum: 10000
           default: 100
           description: Maximum number of social or GitHub list results. `web2list` ignores this field.
           x-default: 100
@@ -400,6 +427,11 @@ components:
           example: 100
     ExtractResponse:
       type: object
+      additionalProperties: false
+      required:
+        - success
+        - data
+        - metadata
       properties:
         success:
           type: boolean
@@ -633,6 +665,14 @@ paths:
       summary: Run deep search
       description: Answer a natural-language research question synchronously.
       operationId: runDeepSearch
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optional stable key for this logical request. When omitted, lev8 generates one and returns it in the response Header.
+          schema:
+            type: string
+            maxLength: 128
       requestBody:
         required: true
         content:
@@ -644,16 +684,27 @@ paths:
       responses:
         "200":
           description: Deep Search answer.
+          headers:
+            Idempotency-Key:
+              description: The supplied or server-generated idempotency key.
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/DeepSearchResponse"
         "401":
           description: Missing or invalid API key.
+        "402":
+          description: Insufficient credits.
         "403":
           description: API key is forbidden or lacks Deep Search access.
+        "409":
+          description: Idempotency conflict or no completed response is available to replay.
         "422":
           description: Validation failed.
+        "429":
+          description: Concurrency limit reached.
         "500":
           description: Server error.
         "503":
@@ -663,6 +714,14 @@ paths:
       summary: Enrich entity
       description: Generate structured fields for an entity from context and a JSON Schema.
       operationId: enrichEntity
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optional stable key for this logical request. When omitted, lev8 generates one and returns it in the response Header.
+          schema:
+            type: string
+            maxLength: 128
       requestBody:
         required: true
         content:
@@ -684,16 +743,27 @@ paths:
       responses:
         "200":
           description: Enrichment result.
+          headers:
+            Idempotency-Key:
+              description: The supplied or server-generated idempotency key.
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/EnrichResponse"
         "401":
           description: Missing or invalid API key.
+        "402":
+          description: Insufficient credits.
         "403":
           description: API key is forbidden or lacks Enrich access.
+        "409":
+          description: Idempotency conflict or no completed response is available to replay.
         "422":
           description: Validation failed.
+        "429":
+          description: Concurrency limit reached.
         "500":
           description: Server error.
         "503":
@@ -703,6 +773,14 @@ paths:
       summary: Extract data
       description: Extract social, GitHub, or web page lists synchronously.
       operationId: extractData
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: false
+          description: Optional stable key for this logical request. When omitted, lev8 generates one and returns it in the response Header.
+          schema:
+            type: string
+            maxLength: 128
       requestBody:
         required: true
         content:
@@ -717,16 +795,27 @@ paths:
       responses:
         "200":
           description: Extracted data.
+          headers:
+            Idempotency-Key:
+              description: The supplied or server-generated idempotency key.
+              schema:
+                type: string
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ExtractResponse"
         "401":
           description: Missing or invalid API key.
+        "402":
+          description: Insufficient credits.
         "403":
           description: API key is forbidden or lacks Extract access.
+        "409":
+          description: Idempotency conflict or no completed response is available to replay.
         "422":
           description: Validation failed.
+        "429":
+          description: Concurrency limit reached.
         "500":
           description: Server error.
         "503":

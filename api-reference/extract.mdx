@@ -5,7 +5,7 @@ description: "Extract social, GitHub, or web page lists synchronously."
 
 [`POST /v1/extract`](/api-reference/extract/run) routes the request by `type` and returns social lists, GitHub lists, or structured lists from web pages.
 
-Use Extract when you need follower, following, stargazer, or contributor lists, or when a web page contains list-like data that should be returned as structured JSON.
+Use Extract when you need follower, following, stargazer, or contributor lists, or when a public web page contains list-like data that should be returned as structured JSON.
 
 ## Headers
 
@@ -14,15 +14,16 @@ Use Extract when you need follower, following, stargazer, or contributor lists, 
 | `Content-Type: application/json` | Yes | Other media types return `422`. |
 | `Accept: application/json` | Recommended | Declares that the client expects a JSON response. |
 | `Authorization` | Yes | `Bearer lev8_live_...` -- an active Lev8 API key with Extract access. |
+| `Idempotency-Key` | No | Stable key for safely replaying the same logical request. Lev8 generates and returns one when omitted. |
 
 ## Request body
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
 | `type` | string enum | Yes | - | Extraction type. See [supported extraction types](#supported-extraction-types). |
-| `target` | string | Yes | - | Account handle, GitHub repository, repository URL, or web page URL. |
-| `instruction` | string | For `web2list` | - | Describes the list items and fields to extract from a web page. |
-| `limit` | integer | No | `100` | Maximum number of social or GitHub list results. `web2list` ignores this field. |
+| `target` | string | Yes | - | Account handle, GitHub repository, repository URL, or web page URL, up to 2,048 characters. |
+| `instruction` | string | For `web2list` | - | Describes the list items and fields to extract from a web page, up to 4,000 characters. |
+| `limit` | integer | No | `100` | Maximum number of social or GitHub list results, from 1 to 10,000. `web2list` normalizes this field to `100`. |
 
 ## Supported extraction types
 

@@ -3,7 +3,7 @@ title: "Idempotency"
 description: "Replay the same logical request without duplicate search execution or billing."
 ---
 
-`Idempotency-Key` is an optional Header for Entity Search `create_task` and Contact Search.
+`Idempotency-Key` is an optional Header for all five paid POST operations: Entity Search `create_task`, Contact Search, Deep Search, Enrich, and Extract.
 
 ```http
 Idempotency-Key: 550e8400-e29b-41d4-a716-446655440000
@@ -27,6 +27,7 @@ The request body is normalized and hashed. Reusing a key with different input re
 | --- | --- |
 | Entity Search `create_task` | Returns the existing task and original request ID when a stable task handle is available. Returns `409 request_in_progress` while creation remains unresolved. |
 | Contact Search | Replays the saved successful JSON response and original request ID after settlement. Returns `409 request_already_exists` when no completed response is available. |
+| Deep Search, Enrich, or Extract | Replays the saved successful JSON response and original request ID after settlement. Returns `409 request_already_exists` when no completed response is available. |
 
 Neither successful replay calls the search service or bills the request again.
 
@@ -46,4 +47,4 @@ An Entity Search request is replayable only during its fixed recovery window. On
 
 ## MCP behavior
 
-The hosted MCP endpoint does not expose `idempotency_key` in any Tool schema. It generates a new internal key for each `entity_search_create` and `contact_search` call and does not automatically retry paid operations. Calling either Tool again is a new billable operation.
+The hosted MCP endpoint does not expose `idempotency_key` in any Tool schema. It generates a new internal key for each paid POST Tool and does not automatically retry paid operations. Calling `entity_search_create`, `contact_search`, `deep_search`, `enrich`, or `extract` again is a new billable operation.

@@ -6,6 +6,8 @@ openapi: "POST /v1/enrich"
 
 Submits entity context and a JSON Schema. The response returns enrichment data that follows the requested schema when possible.
 
+The root schema must have `type: "object"` and at least one entry in `properties`. Lev8 accepts schemas up to 256 KiB, 12 levels, and 200 cumulative properties.
+
 ## Example
 
 ```bash
