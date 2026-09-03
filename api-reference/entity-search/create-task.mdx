@@ -8,6 +8,8 @@ Creates an Entity Search task and returns a `leads_search_id` for later [Status]
 
 `Idempotency-Key` is optional and can contain up to 128 characters. When omitted, Lev8 generates a key and returns it in the response Header. The complete JSON body must be at most 1 MiB; unknown fields and multiple JSON objects are rejected.
 
+For `entity_type: "xiaohongshu"` or `entity_type: "wechat"`, include `enable_web_search: true`. Use `wechat` for WeChat Official Account search. Requests that omit `enable_web_search` or set it to `false` return `422 invalid_request_error`. Xiaohongshu and WeChat Official Account searches usually take 1 to 2 minutes before results are ready.
+
 ## Example
 
 ```bash

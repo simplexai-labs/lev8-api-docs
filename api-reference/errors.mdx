@@ -40,6 +40,8 @@ The API redacts upstream response bodies and implementation details. A failed En
 
 Not every status applies to every endpoint. Credit balance does not reserve credits and therefore does not return search billing, task, or idempotency errors.
 
+Entity Search also returns `422 invalid_request_error` when `entity_type` is `xiaohongshu` or `wechat` and `enable_web_search` is omitted or set to `false`. The `wechat` entity type searches WeChat Official Accounts.
+
 ## Task-level failures
 
 An Entity Search task can fail after `create_task` succeeds. In that case, Status returns HTTP `200` with the failure nested under `status`:

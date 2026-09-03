@@ -1,6 +1,6 @@
 ---
 title: "Entity Search"
-description: "Create asynchronous search tasks for people, companies, creators, and Shopify stores."
+description: "Create asynchronous search tasks for people, companies, creators, Shopify stores, Xiaohongshu, and WeChat Official Accounts."
 ---
 
 Entity Search runs as an asynchronous task:
@@ -28,10 +28,10 @@ The task may produce results while it is still running. A client is done reading
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `entity_type` | string enum | Yes | - | Entity type to search. See [supported entity types](#supported-entity-types). |
+| `entity_type` | string enum | Yes | - | Entity type to search. See [supported entity types](#supported-entity-types). Use `wechat` for WeChat Official Account search. `xiaohongshu` and `wechat` require `enable_web_search: true` and usually take 1 to 2 minutes to produce results. |
 | `objective` | string | Yes | - | Natural-language search target, 1 to 4,000 UTF-8 bytes after trimming. |
 | `limit` | integer | No | `20` | Maximum number of deduplicated entities to produce, from `1` to `500`; the service can return fewer. |
-| `enable_web_search` | boolean | No | `false` | Keeps database search and additionally enables open web search mode. |
+| `enable_web_search` | boolean | Conditional | `false` | Keeps database search and additionally enables open web search mode. Required and must be `true` when `entity_type` is `xiaohongshu` or `wechat`. |
 | `enrich_fields` | string[] | No | omitted | Extra fields to return under `entities[].enrich_fields`, up to 20 items. Not suitable for finding email addresses or phone numbers; use [Contact Search](/api-reference/contact-search) for contact details. |
 | `dedup_lev8_leads` | string[] | No | omitted | Previous `leads_search_id` values whose results should be excluded, up to 100 items. |
 | `dedup_custom_leads` | string[] | No | omitted | Existing lead names to exclude from this task, up to 1,000 items. |
@@ -41,8 +41,12 @@ The complete JSON body must be at most 1 MiB. Unknown fields, malformed JSON, an
 ### Enable web search
 
 <Tip>
-  `enable_web_search: true` keeps the default database search and also turns on open web search mode. Use it for creator searches on X/Twitter, YouTube, TikTok, or Instagram, Shopify store discovery, or highly time-sensitive searches such as entities from the last 30 days. Turning it on usually increases latency and cost, so keep it `false` unless broader or fresher discovery is needed.
+  `enable_web_search: true` keeps the default database search and also turns on open web search mode. Use it for creator searches on X/Twitter, YouTube, TikTok, Instagram, Xiaohongshu, or WeChat Official Accounts, Shopify store discovery, or highly time-sensitive searches such as entities from the last 30 days. Turning it on usually increases latency and cost, so keep it `false` unless broader or fresher discovery is needed.
 </Tip>
+
+<Warning>
+  Requests with `entity_type: "xiaohongshu"` or `entity_type: "wechat"` must include `enable_web_search: true`. Omitting `enable_web_search` or setting it to `false` returns `422 invalid_request_error`. These searches usually take 1 to 2 minutes before results are ready.
+</Warning>
 
 ### Deduplicate results
 
@@ -79,6 +83,8 @@ By default, entities include `name`, `links`, `description`, and `score`. Use `e
 | `tiktok_creator` | TikTok creators. |
 | `instagram_creator` | Instagram creators. |
 | `shopify_store` | Shopify stores. |
+| `xiaohongshu` | Xiaohongshu accounts. Requires `enable_web_search: true`; results usually take 1 to 2 minutes. |
+| `wechat` | WeChat Official Accounts. Requires `enable_web_search: true`; results usually take 1 to 2 minutes. |
 
 ### Example
 
@@ -164,6 +170,10 @@ curl "https://app.lev8.com/v1/entity-search/status?leads_search_id=leads_search_
 | `status.error` | string | The fixed value `internal error` for a failed task; omitted otherwise. |
 
 `verified_count` includes accepted and rejected candidates, so it is always greater than or equal to `ready_count`. Known `stop_reason` values include `limit`, `source_finished`, `no_data_timeout`, and `rejected_streak`.
+
+<Note>
+  Xiaohongshu and WeChat Official Account tasks commonly remain `running` for 1 to 2 minutes before `ready_count` increases.
+</Note>
 
 ## Fetch results
 
@@ -252,9 +262,9 @@ curl "https://app.lev8.com/v1/entity-search/fetch?leads_search_id=leads_search_0
 | `entities[].score` | object | Relevance score and explanation. |
 | `entities[].enrich_fields` | object | Extra fields requested through `enrich_fields`. |
 
-Common `links` keys by entity type:
+Common `links` fields by entity type:
 
-| `entity_type` | `links` keys |
+| `entity_type` | `links` fields |
 | --- | --- |
 | `company` | `website`, `linkedin_url`, `twitter_url`, `instagram_url`, `tiktok_url`, `youtube_url`, `github_url` |
 | `person` | `linkedin_url` |
@@ -263,6 +273,8 @@ Common `links` keys by entity type:
 | `tiktok_creator` | `tiktok_url` |
 | `instagram_creator` | `instagram_url` |
 | `shopify_store` | `main_page` |
+| `xiaohongshu` | Platform URL fields when available. |
+| `wechat` | Official Account URL fields when available. |
 
 ## Complete workflow examples
 
@@ -279,7 +291,7 @@ Entity Search uses the standard [error envelope](/api-reference/errors).
 | `403` | API key is revoked, expired, or lacks Entity Search access. |
 | `404` | `leads_search_id` does not exist or belongs to another API key. |
 | `409` | The idempotency key conflicts with another body, task creation is unresolved, or the replay window expired. |
-| `422` | Validation failed, such as unsupported `entity_type`, invalid `limit`, invalid `pts` or `num`, or invalid `enrich_fields`. |
+| `422` | Validation failed, such as unsupported `entity_type`, omitted or false `enable_web_search` for `xiaohongshu` or `wechat`, invalid `limit`, invalid `pts` or `num`, or invalid `enrich_fields`. |
 | `429` | The user-level or global active-task limit was reached. |
 | `500` | Server error. |
 | `503` | Entity Search or pricing for this entity type is not enabled. |

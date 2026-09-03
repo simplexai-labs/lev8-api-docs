@@ -5,7 +5,7 @@ description: Search entities and contacts, research questions, enrich records, a
 
 # Lev8 MCP
 
-Use this skill when a user asks to configure the hosted Lev8 MCP endpoint, find people, companies, creators, Shopify stores, or contact details, answer research questions, enrich an entity, or extract social, GitHub, or public web-page lists.
+Use this skill when a user asks to configure the hosted Lev8 MCP endpoint, find people, companies, creators, Shopify stores, Xiaohongshu accounts, WeChat Official Accounts, or contact details, answer research questions, enrich an entity, or extract social, GitHub, or public web-page lists.
 
 ## Authentication
 
@@ -21,7 +21,11 @@ Entity Search is asynchronous. Use the MCP tools in this order:
 2. `entity_search_status`
 3. `entity_search_fetch`
 
-Continue fetching with the next `pts = pts + count`. Finish only when task status is `done` and local `pts >= ready_count`.
+Continue fetching with the next `pts = pts + count`. Finish only when task status is `done` or `error` and local `pts >= ready_count`.
+
+Supported `entity_type` values are `person`, `company`, `twitter_creator`, `youtube_creator`, `tiktok_creator`, `instagram_creator`, `shopify_store`, `xiaohongshu`, and `wechat`. Use `wechat` for WeChat Official Account search.
+
+For `entity_type: "xiaohongshu"` or `entity_type: "wechat"`, pass `enable_web_search: true`. Requests that omit `enable_web_search` or set it to `false` fail validation. Xiaohongshu and WeChat Official Account searches usually take 1 to 2 minutes before results are ready, so keep polling instead of creating a duplicate task.
 
 ## Contact Search
 

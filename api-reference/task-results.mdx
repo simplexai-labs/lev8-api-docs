@@ -5,6 +5,8 @@ description: "Complete Node.js and Python examples for the Entity Search create-
 
 These examples implement the full [Entity Search](/api-reference/entity-search) lifecycle: create a task, poll status, fetch every result, and handle terminal states. See the [Entity Search reference](/api-reference/entity-search) for field definitions and error codes.
 
+If you adapt these examples for `entity_type: "xiaohongshu"` or `entity_type: "wechat"`, add `enable_web_search: true` to the create request body. Use `wechat` for WeChat Official Account search. These tasks usually take 1 to 2 minutes before results are ready, so keep polling instead of creating a duplicate task.
+
 ## Node.js
 
 This example uses Node.js 18 or later and processes each available result exactly once.
