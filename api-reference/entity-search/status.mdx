@@ -39,7 +39,7 @@ curl --get "https://app.lev8.com/v1/entity-search/status" \
 Known `stop_reason` values include `limit`, `source_finished`, `no_data_timeout`, and `rejected_streak`. Treat new values as forward-compatible strings.
 
 <Note>
-  A task with `status: error` can still have a positive `ready_count`. Fetch those completed results before closing the task locally.
+  A task with `status: error` can still have a positive `ready_count`. Fetch those completed results before closing the task locally. Xiaohongshu and WeChat Official Account tasks commonly stay `running` for 1 to 2 minutes before results are ready.
 </Note>
 
 Status is available only to the exact API key that created the task. A missing task and a task owned by another key both return `404 not_found`.

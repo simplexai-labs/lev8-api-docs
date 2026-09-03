@@ -41,6 +41,8 @@ An Entity Search request is replayable only during its fixed recovery window. On
 4. Store the returned `Idempotency-Key`, `X-Request-Id`, and `leads_search_id` with the operation.
 5. Generate a new key only for an intentional new search.
 
+Xiaohongshu and WeChat Official Account searches usually take 1 to 2 minutes before results are ready. Keep polling the existing `leads_search_id` instead of creating a new task with a new idempotency key.
+
 <Warning>
   If you omit the key and lose the entire response, you also lose the server-generated value. Retrying can then start a second billable operation.
 </Warning>

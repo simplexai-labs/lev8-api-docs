@@ -33,10 +33,11 @@ What to do:
    printf '%s\n' "${LEV8_API_KEY:+api-key-set}"
 4. If not set, ask me to create a Token in https://app.lev8.com/api-tokens and set it in my own shell.
 5. Configure https://app.lev8.com/mcp with Bearer authentication from LEV8_API_KEY.
-6. To find people, companies, KOLs, or Shopify stores, use entity_search_create, entity_search_status, then entity_search_fetch.
-7. To find contact details, use contact_search.
-8. Use deep_search for open-ended research, enrich for schema-driven entity fields, and extract for social, GitHub, or public web-page lists.
-9. Tell me how to restart or rescan this agent so it discovers the skill.
+6. To find people, companies, KOLs, Shopify stores, Xiaohongshu accounts, or WeChat Official Accounts, use entity_search_create, entity_search_status, then entity_search_fetch.
+7. For xiaohongshu searches, or WeChat Official Account searches with entity_type=wechat, pass enable_web_search=true and keep polling for 1 to 2 minutes before treating the task as slow.
+8. To find contact details, use contact_search.
+9. Use deep_search for open-ended research, enrich for schema-driven entity fields, and extract for social, GitHub, or public web-page lists.
+10. Tell me how to restart or rescan this agent so it discovers the skill.
 
 Hard rule:
 - Never echo, cat, grep, paste, or log a complete lev8 Token.

@@ -115,7 +115,7 @@ If you haven't created a Token yet, follow the [Authentication](/authentication)
 
 ## Available Tools
 
-- **`entity_search_create`**: Create a billed asynchronous search for companies, people, creators, or Shopify stores.
+- **`entity_search_create`**: Create a billed asynchronous search for companies, people, creators, Shopify stores, Xiaohongshu, or WeChat Official Accounts.
 - **`entity_search_status`**: Check the progress of an entity search task.
 - **`entity_search_fetch`**: Read one page of results from a completed or in-progress search.
 - **`contact_search`**: Find an email or phone number. Only a non-empty result is charged.
@@ -188,10 +188,10 @@ Entity Search is asynchronous. Create a task, monitor it, then fetch results in 
 
 <Steps>
   <Step title="Create">
-    Call `entity_search_create` with an `entity_type` and `objective`. Save the returned `leads_search_id`.
+    Call `entity_search_create` with an `entity_type` and `objective`. For `xiaohongshu` searches, or WeChat Official Account searches with `entity_type: "wechat"`, set `enable_web_search` to `true`. Save the returned `leads_search_id`.
   </Step>
   <Step title="Monitor">
-    Call `entity_search_status` until the state becomes `done` or `error`. You can begin fetching as soon as `ready_count` is positive.
+    Call `entity_search_status` until the state becomes `done` or `error`. You can begin fetching as soon as `ready_count` is positive. Xiaohongshu and WeChat Official Account tasks usually take 1 to 2 minutes before results are ready.
   </Step>
   <Step title="Fetch">
     Call `entity_search_fetch`. Advance `pts` by the returned `count` until all `ready_count` results have been read.

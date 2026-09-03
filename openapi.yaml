@@ -38,12 +38,28 @@ components:
     EntitySearchCreateTaskRequest:
       type: object
       additionalProperties: false
+      allOf:
+        - if:
+            required:
+              - entity_type
+            properties:
+              entity_type:
+                enum:
+                  - xiaohongshu
+                  - wechat
+          then:
+            required:
+              - enable_web_search
+            properties:
+              enable_web_search:
+                const: true
       required:
         - entity_type
         - objective
       properties:
         entity_type:
           type: string
+          description: 'Entity type to search. Use `wechat` for WeChat Official Account search. `xiaohongshu` and `wechat` require `enable_web_search: true` and usually take 1 to 2 minutes to produce results.'
           enum:
             - person
             - company
@@ -52,6 +68,8 @@ components:
             - tiktok_creator
             - instagram_creator
             - shopify_store
+            - xiaohongshu
+            - wechat
           x-default: "company"
           example: company
         objective:
@@ -69,6 +87,7 @@ components:
           example: 20
         enable_web_search:
           type: boolean
+          description: 'Keeps database search and additionally enables open web search mode. Required and must be `true` when `entity_type` is `xiaohongshu` or `wechat`; false or omitted returns `422 invalid_request_error`. Xiaohongshu and WeChat Official Account searches usually take 1 to 2 minutes to produce results.'
           default: false
           x-default: false
           example: false
@@ -111,6 +130,17 @@ components:
           example: leads_search_01JABCDEF123456789
         entity_type:
           type: string
+          description: Entity type used by the task.
+          enum:
+            - person
+            - company
+            - twitter_creator
+            - youtube_creator
+            - tiktok_creator
+            - instagram_creator
+            - shopify_store
+            - xiaohongshu
+            - wechat
           example: company
         objective:
           type: string
@@ -470,7 +500,7 @@ paths:
   /v1/entity-search/create_task:
     post:
       summary: Create task
-      description: Create an asynchronous Entity Search task.
+      description: 'Create an asynchronous Entity Search task. Use `wechat` for WeChat Official Account search. `xiaohongshu` and `wechat` tasks require `enable_web_search: true` and usually take 1 to 2 minutes to produce results.'
       operationId: createEntitySearchTask
       parameters:
         - name: Idempotency-Key
@@ -517,7 +547,7 @@ paths:
         "409":
           description: Idempotency conflict, unresolved task creation, or an expired replay window.
         "422":
-          description: Validation failed.
+          description: 'Validation failed, including omitted or false `enable_web_search` for `xiaohongshu` or `wechat`.'
         "429":
           description: Active-task concurrency limit reached.
         "500":

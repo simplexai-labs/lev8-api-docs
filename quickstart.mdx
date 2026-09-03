@@ -40,10 +40,12 @@ export LEV8_API_KEY="lev8_live_..."
     ```
 
     Save the returned `Idempotency-Key`, `X-Request-Id`, and `leads_search_id`. Generate and send your own stable key when the request must be safely replayable after a lost response.
+
+    For `entity_type: "xiaohongshu"` or `entity_type: "wechat"`, add `"enable_web_search": true`; those entity types reject database-only requests. Use `wechat` for WeChat Official Account search, and expect these tasks to take 1 to 2 minutes before results are ready.
   </Step>
 
   <Step title="Check task status">
-    Poll `status` until results are ready. `ready_count` is the number of entities currently available to fetch.
+    Poll `status` until results are ready. `ready_count` is the number of entities currently available to fetch. Xiaohongshu and WeChat Official Account tasks commonly stay `running` for 1 to 2 minutes.
 
     ```bash
     export LEADS_SEARCH_ID="leads_search_01JABCDEF123456789"
