@@ -278,6 +278,202 @@ components:
           maxLength: 4000
           x-default: "Find the work email of Jane Smith, VP of Engineering at Acme Corp. Owner signals: linkedin_url=https://www.linkedin.com/in/jane-smith-acme"
           example: "Find the work email of Jane Smith, VP of Engineering at Acme Corp. Owner signals: linkedin_url=https://www.linkedin.com/in/jane-smith-acme"
+    ContactAssessment:
+      type: object
+      additionalProperties: false
+      required:
+      - satisfies_request
+      - reason_code
+      properties:
+        satisfies_request:
+          type:
+          - boolean
+          - 'null'
+          description: Null means the service cannot establish that all requested constraints
+            are satisfied.
+        reason_code:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{0,79}$
+          maxLength: 80
+    ContactSearchSummary:
+      type: object
+      additionalProperties: false
+      required:
+      - version
+      - resolved_route_hint
+      - coverage
+      - stop_reason
+      - elapsed_ms
+      - cache_status
+      - execution_chain
+      - execution_steps
+      - trace_truncated
+      properties:
+        version:
+          type: integer
+          const: 1
+        resolved_route_hint:
+          type: string
+          enum:
+          - person
+          - company_role
+          - company
+          - creator
+          - local_business
+          - unknown
+        coverage:
+          type: string
+          enum:
+          - complete
+          - partial
+          - unknown
+        stop_reason:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{0,79}$
+          maxLength: 80
+        elapsed_ms:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+        cache_status:
+          type: string
+          enum:
+          - hit
+          - miss
+          - bypass
+          - unknown
+        execution_chain:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        execution_steps:
+          type: array
+          maxItems: 16
+          items:
+            type: object
+            additionalProperties: false
+            required:
+            - label
+            - detail
+            properties:
+              label:
+                type: string
+                minLength: 1
+                maxLength: 80
+              detail:
+                type:
+                - string
+                - 'null'
+                maxLength: 500
+        trace_truncated:
+          type: boolean
+    ContactNextAction:
+      type: object
+      additionalProperties: false
+      required:
+      - action
+      - reason_code
+      - same_input_retry
+      - required_evidence
+      properties:
+        action:
+          type: string
+          enum:
+          - use_result
+          - stop
+          - search_with_new_evidence
+          - retry_later
+          - review_evidence
+        reason_code:
+          type: string
+          pattern: ^[a-z][a-z0-9_]{0,79}$
+          maxLength: 80
+        same_input_retry:
+          type: string
+          enum:
+          - not_recommended
+          - after_backoff
+          - unknown
+        required_evidence:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            pattern: ^[a-z][a-z0-9_]{0,79}$
+            maxLength: 80
+    ContactAlternative:
+      type: object
+      additionalProperties: false
+      properties:
+        content:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        reference:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        name:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        title:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        profile:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        contact_type:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        mailbox_type:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        owner_match_state:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        reason_code:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        reliability:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        source:
+          type:
+          - string
+          - 'null'
+          maxLength: 500
+        confidence_score:
+          type:
+          - number
+          - 'null'
+          minimum: 0
+          maximum: 1
+        reliability_reasons:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            maxLength: 500
     ContactSearchResult:
       type: object
       properties:
@@ -299,6 +495,38 @@ components:
                 - string
                 - "null"
               example: "..."
+            outcome:
+              type: string
+              enum:
+              - found
+              - not_found
+              - error
+            owner_match_state:
+              type: [string, "null"]
+              enum:
+              - null
+              - matched
+              - organization_bound
+              - unbound
+              - mismatched
+            mailbox_type:
+              type: [string, "null"]
+              enum:
+              - null
+              - person
+              - shared
+              - unknown
+            assessment:
+              $ref: '#/components/schemas/ContactAssessment'
+            search_summary:
+              $ref: '#/components/schemas/ContactSearchSummary'
+            next_action:
+              $ref: '#/components/schemas/ContactNextAction'
+            alternatives:
+              type: array
+              maxItems: 3
+              items:
+                $ref: '#/components/schemas/ContactAlternative'
         created_at:
           type: string
           format: date-time
