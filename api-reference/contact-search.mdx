@@ -153,15 +153,43 @@ On success, the response status is `200`. `Idempotency-Key` contains the supplie
 | `object` | string | Always `contact_search_result`. |
 | `request.contact_type` | string | Echoes the normalized `contact_type` from the request. |
 | `request.objective` | string | Echoes the normalized `objective` from the request. |
-| `result.content` | string or null | The email address or phone number when found; otherwise `null` or an empty string. |
+| `result.content` | string or null | The email address or phone number when `outcome=found`; otherwise `null`. |
 | `result.reference` | string or null | A supporting reference when available; otherwise `null`. |
 | `created_at` | string | UTC RFC 3339 timestamp for the result. |
 
-Clients should treat `result.content` as not found when it is `null`, empty, or contains only whitespace. The response contains only the documented fields; upstream error bodies and internal request identifiers are not exposed.
+Clients should treat `result.content` as not found when it is `null`, empty, contains only whitespace, or is the legacy sentinel `unknown`. A returned candidate does not prove that the requested person or work mailbox was found. Inspect `owner_match_state`, `mailbox_type`, and the evidence before using it.
+
+### Email search guidance
+
+When present, the following optional fields explain an email lookup. Older responses and stored replays may omit them. Missing guidance means evidence is unavailable; it does not mean the search exhausted every available source.
+
+| Field | Meaning |
+| --- | --- |
+| `result.assessment.satisfies_request` | `false` when evidence shows the result does not satisfy the request; `null` when the service cannot establish that all requested constraints are satisfied. Do not interpret `null` as `true`. |
+| `result.assessment.reason_code` | A machine-readable reason for the assessment. |
+| `result.search_summary` | Versioned, bounded execution evidence: resolved route, coverage, stop reason, elapsed milliseconds, cache status, and sanitized execution chain and steps. |
+| `result.next_action` | Recommended action, reason, whether repeating the same input is worthwhile, and the kinds of new evidence needed. |
+| `result.alternatives` | Up to three additional email candidates, with their own ownership and reliability evidence. Alternatives do not change the primary outcome or billing. |
+
+`search_summary.coverage` distinguishes `complete`, `partial`, and `unknown`. Completion is limited to the current inputs and execution scope; it never proves that an email does not exist elsewhere. A timeout is incomplete work. A successful `not_found` result alone does not establish complete coverage. `trace_truncated=true` means some execution detail was omitted.
+
+Inspect `next_action.action` before another lookup:
+
+- `use_result`: use the result after checking its assessment.
+- `stop`: stop the current search.
+- `search_with_new_evidence`: obtain the evidence described by `required_evidence` before another search.
+- `retry_later`: follow the existing error/retry contract and wait before retrying.
+- `review_evidence`: review the result against the user's constraints; the service cannot make the final decision.
+
+When `same_input_retry=not_recommended`, changing only the wording of `objective` or supplying a new key is not a useful next step. New, verified identity or employment evidence can justify a new search. A known mailbox can become owner-bound when new evidence arrives; the same mailbox text alone does not make two requests equivalent.
+
+A shared company mailbox may be useful for organization outreach while failing a decision-maker request. A profile-bound personal mailbox may still fail a work-email request. A difference between website and mailbox domains requires evidence review rather than automatic rejection.
+
+The execution summary omits raw provider payloads and internal errors. An HTTP or transport failure without a terminal response cannot establish search coverage.
 
 ## Billing behavior
 
-Lev8 reserves the configured price for one lookup before contacting the search service. The request is charged only when `result.content` contains a non-empty result; a completed lookup with no result releases the reservation. Your Lev8 contact will provide the enabled contact types and applicable pricing.
+Lev8 reserves the configured price for one lookup before contacting the search service. The request is charged only for a `found` outcome with a non-empty contact value; a completed lookup with no result releases the reservation. The assessment and ownership fields do not change this billing rule. Your Lev8 contact will provide the enabled contact types and applicable pricing.
 
 The success response is written only after settlement succeeds. An upstream or response-protocol failure returns `500 internal_error` and releases the reservation when the billing service is available.
 

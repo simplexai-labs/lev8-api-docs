@@ -49,4 +49,8 @@ Xiaohongshu and WeChat Official Account searches usually take 1 to 2 minutes bef
 
 ## MCP behavior
 
-The hosted MCP endpoint does not expose `idempotency_key` in any Tool schema. It generates a new internal key for each paid POST Tool and does not automatically retry paid operations. Calling `entity_search_create`, `contact_search`, `deep_search`, `enrich`, or `extract` again is a new billable operation.
+The `contact_search` Tool accepts an optional `idempotency_key`. Persist it with the input before calling the Tool. Reuse both to recover a completed response, including a completed error, without new work or charges. If the key is omitted, the server generates one and returns it with the result.
+
+A new key starts a new logical request. Use one only for an intentional new search, such as after obtaining new identity evidence or deciding to retry a completed retryable error. Review `next_action` when present; changing the wording alone is not new evidence. Repeating a completed error with its original key returns the same error rather than rerunning the search.
+
+The other paid POST Tools generate their keys internally and do not automatically retry paid operations. Calling them again can start a new billable operation.

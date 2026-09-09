@@ -208,11 +208,13 @@ Contact Search is synchronous and returns the result in a single call.
 
 <Steps>
   <Step title="Search">
-    Call `contact_search` with a `contact_type` (`email` or `phone`) and an `objective` describing the person and company. The result is returned directly.
+    Call `contact_search` with a `contact_type` (`email` or `phone`) and an `objective` describing one requested contact, the company, and known identity evidence. Supply a stable `idempotency_key` before sending the request. The result is returned directly. The optional `timeout_seconds` sets the total response budget, from 10 to 600 seconds; the default is 120.
   </Step>
 </Steps>
 
-Only a non-empty result is charged. If no contact is found, no credits are deducted.
+A `found` outcome with a non-empty contact value is charged. `not_found` and `error` consume zero units. A charged candidate is not necessarily bound to the requested owner.
+
+For email, inspect `assessment`, `search_summary`, and `next_action` when present. If `same_input_retry=not_recommended`, do not repeat the search with only a reworded objective or a new key. Obtain the specified new evidence, review the bounded `alternatives`, or end the search. Missing or partial coverage is not proof that no contact exists. See [Email search guidance](/api-reference/contact-search#email-search-guidance).
 
 ## Synchronous tools
 
@@ -224,10 +226,10 @@ For `web2list`, `extract` requires an instruction and a public HTTP or HTTPS URL
 
 Every Tool call goes through the Lev8 API, so [Token scopes](/authentication), [credit billing](/guides/billing), and [idempotency handling](/guides/idempotency) still apply.
 
-The MCP server generates an internal idempotency key for every paid POST Tool: `entity_search_create`, `contact_search`, `deep_search`, `enrich`, and `extract`. That key is not exposed as a Tool input.
+`contact_search` accepts an optional `idempotency_key` and returns it with the result. If omitted, the server generates a key. The other paid POST Tools generate their keys internally.
 
 <Warning>
-  The first release does not automatically retry paid operations. Calling the Tool again creates a new key and is treated as a new billable operation. Do not repeat a call whose outcome is unknown.
+  For `contact_search`, reuse the same key and input after a disconnect to recover a completed result without new work or charges. A completed error is also replayed; the same key does not rerun a failed search. An intentional new search requires a new key and can incur a new charge. Do not create a new request while the original outcome is unknown.
 </Warning>
 
 ## Troubleshooting
