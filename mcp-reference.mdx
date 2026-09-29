@@ -208,9 +208,44 @@ Contact Search is synchronous and returns the result in a single call.
 
 <Steps>
   <Step title="Search">
-    Call `contact_search` with a `contact_type` (`email` or `phone`) and an `objective` describing the person and company. The result is returned directly.
+    Call `contact_search` with a `contact_type` (`email` or `phone`) and an `objective` describing the person and company. You can also provide the optional typed `context` object. The result is returned directly.
   </Step>
 </Steps>
+
+### Typed context (supported schema)
+
+<Warning>
+  Typed `context` is available only when this MCP server advertises the field in the `contact_search` tool schema. Existing objective-only calls remain supported, and batch tools are unchanged.
+</Warning>
+
+`context` contains caller-supplied facts that can help identify the contact owner. Every property is optional and accepts a string or `null`, with a maximum of 600 Unicode code points in the raw supplied value before trimming.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `person_full_name` | string or null | The person's full name. |
+| `person_role` | string or null | The person's role or title. |
+| `person_linkedin_url` | string or null | The person's LinkedIn profile URL. |
+| `company_name` | string or null | The company name. |
+| `company_website` | string or null | The company website URL. |
+| `company_domain` | string or null | The company domain. |
+| `company_linkedin_url` | string or null | The company's LinkedIn page URL. |
+
+```json
+{
+  "contact_type": "email",
+  "objective": "Find the work email for the engineering leader at the example company.",
+  "context": {
+    "person_full_name": "Jane Smith",
+    "person_role": "VP of Engineering",
+    "company_name": "Example Company",
+    "company_domain": "example.com"
+  }
+}
+```
+
+Raw values are limited before surrounding whitespace is trimmed. Omitted, `null`, empty, and whitespace-only values normalize away; an empty context has the same meaning as no context. Unknown context properties and non-string values are rejected. These are caller facts, not verified identity, and they cannot override owner policy.
+
+When the normalized context is non-empty, it participates in the canonical idempotency payload and is echoed by value in found, not-found, and generated error responses. An absent context keeps the objective-only request shape and fingerprint. Arbitrary JSON, provider-specific `additional_args`, and owner-policy controls are not accepted.
 
 Only a non-empty result is charged. If no contact is found, no credits are deducted.
 

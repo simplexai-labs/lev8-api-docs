@@ -258,6 +258,53 @@ components:
                   funding stage:
                     content: Series B
                     reference: "..."
+    ContactSearchContext:
+      type: object
+      additionalProperties: false
+      description: Optional caller-supplied facts that help identify the contact owner. Raw values are limited to 600 Unicode code points before trimming; null, empty, and whitespace-only values are omitted after trimming.
+      properties:
+        person_full_name:
+          type:
+            - string
+            - "null"
+          maxLength: 600
+          description: Person's full name supplied by the caller.
+        person_role:
+          type:
+            - string
+            - "null"
+          maxLength: 600
+          description: Person's role or title supplied by the caller.
+        person_linkedin_url:
+          type:
+            - string
+            - "null"
+          maxLength: 600
+          description: Person's LinkedIn profile URL supplied by the caller.
+        company_name:
+          type:
+            - string
+            - "null"
+          maxLength: 600
+          description: Company name supplied by the caller.
+        company_website:
+          type:
+            - string
+            - "null"
+          maxLength: 600
+          description: Company website URL supplied by the caller.
+        company_domain:
+          type:
+            - string
+            - "null"
+          maxLength: 600
+          description: Company domain supplied by the caller.
+        company_linkedin_url:
+          type:
+            - string
+            - "null"
+          maxLength: 600
+          description: Company LinkedIn page URL supplied by the caller.
     ContactSearchRequest:
       type: object
       additionalProperties: false
@@ -278,6 +325,33 @@ components:
           maxLength: 4000
           x-default: "Find the work email of Jane Smith, VP of Engineering at Acme Corp. Owner signals: linkedin_url=https://www.linkedin.com/in/jane-smith-acme"
           example: "Find the work email of Jane Smith, VP of Engineering at Acme Corp. Owner signals: linkedin_url=https://www.linkedin.com/in/jane-smith-acme"
+        context:
+          oneOf:
+            - $ref: "#/components/schemas/ContactSearchContext"
+            - type: "null"
+          description: Optional structured caller facts. The non-empty normalized value participates in idempotency and is echoed in found, not-found, and generated error responses. It does not verify identity or override owner policy.
+    ContactSearchRequestEcho:
+      type: object
+      additionalProperties: false
+      required:
+        - contact_type
+        - objective
+      properties:
+        contact_type:
+          type: string
+          enum:
+            - email
+            - phone
+          description: Normalized contact type echoed from the request.
+        objective:
+          type: string
+          description: Normalized objective echoed from the request.
+        lightweight:
+          type: boolean
+          description: Resolved lightweight mode echoed from the request.
+        context:
+          $ref: "#/components/schemas/ContactSearchContext"
+          description: Normalized structured context echoed by value when non-empty; omitted when all values normalize away.
     ContactSearchResult:
       type: object
       properties:
@@ -285,7 +359,7 @@ components:
           type: string
           const: contact_search_result
         request:
-          $ref: "#/components/schemas/ContactSearchRequest"
+          $ref: "#/components/schemas/ContactSearchRequestEcho"
         result:
           type: object
           properties:
@@ -662,6 +736,11 @@ paths:
             example:
               contact_type: email
               objective: "Find the work email of Jane Smith, VP of Engineering at Acme Corp. Owner signals: linkedin_url=https://www.linkedin.com/in/jane-smith-acme"
+              context:
+                person_full_name: Jane Smith
+                person_role: VP of Engineering
+                company_name: Acme Corp
+                company_domain: acmecorp.com
       responses:
         "200":
           description: Contact search result.

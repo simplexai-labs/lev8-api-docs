@@ -20,8 +20,31 @@ description: "Find an email address or phone number for a contact using a natura
 | --- | --- | --- | --- |
 | `contact_type` | string | Yes | `email` or `phone`. |
 | `objective` | string | Yes | Natural-language description of the owner and the email or phone number to find, 1 to 4,000 Unicode characters after trimming. |
+| `context` | object or null | No | Optional structured caller facts. See [Structured context](#structured-context-supported-schema). |
 
 The complete request body must be at most 1 MiB. Unknown fields, malformed JSON, and multiple JSON objects are rejected.
+
+### Structured context (supported schema)
+
+<Warning>
+  Typed context is available only when the Contact Search endpoint advertises this field in its request schema. Existing objective-only requests remain supported, and batch APIs are unchanged.
+</Warning>
+
+`context` contains caller-supplied facts that can help identify the contact owner. Every property is optional and accepts a string or `null`, with a maximum of 600 Unicode code points in the raw supplied value before trimming.
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `person_full_name` | string or null | The person's full name. |
+| `person_role` | string or null | The person's role or title. |
+| `person_linkedin_url` | string or null | The person's LinkedIn profile URL. |
+| `company_name` | string or null | The company name. |
+| `company_website` | string or null | The company website URL. |
+| `company_domain` | string or null | The company domain. |
+| `company_linkedin_url` | string or null | The company's LinkedIn page URL. |
+
+Raw values are limited before surrounding whitespace is trimmed. Omitted, `null`, empty, and whitespace-only values are normalized away; an empty context has the same meaning as no context. Unknown context properties and non-string values are rejected. These are caller facts, not verified identity, and they cannot override owner policy.
+
+When the normalized context is non-empty, it participates in the canonical request body and idempotency fingerprint and is echoed by value in `request.context` for found, not-found, and generated error responses. An absent context keeps the objective-only canonical body and fingerprint. Arbitrary JSON, provider-specific `additional_args`, and owner-policy controls are not accepted.
 
 ### Write the objective
 
@@ -153,6 +176,8 @@ On success, the response status is `200`. `Idempotency-Key` contains the supplie
 | `object` | string | Always `contact_search_result`. |
 | `request.contact_type` | string | Echoes the normalized `contact_type` from the request. |
 | `request.objective` | string | Echoes the normalized `objective` from the request. |
+| `request.lightweight` | boolean | Echoes the server-resolved lightweight mode. |
+| `request.context` | object | Echoes the normalized structured context by value when non-empty; omitted when all context values normalize away. |
 | `result.content` | string or null | The email address or phone number when found; otherwise `null` or an empty string. |
 | `result.reference` | string or null | A supporting reference when available; otherwise `null`. |
 | `created_at` | string | UTC RFC 3339 timestamp for the result. |
